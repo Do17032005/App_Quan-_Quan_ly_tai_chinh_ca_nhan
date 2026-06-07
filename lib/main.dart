@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/finance_provider.dart';
 import 'views/dashboard/dashboard_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    // Sử dụng ChangeNotifierProvider để quản lý state toàn app
+    ChangeNotifierProvider(
+      create: (context) => FinanceProvider()..loadData(), // Gọi loadData ngay khi khởi chạy
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -15,7 +23,7 @@ class MyApp extends StatelessWidget {
       title: 'Finance Manager',
       theme: ThemeData(
         useMaterial3: true,
-        primarySwatch: Colors.blue,
+        primaryColor: Colors.blue,
         scaffoldBackgroundColor: Colors.grey.shade100,
       ),
       home: const DashboardScreen(),
