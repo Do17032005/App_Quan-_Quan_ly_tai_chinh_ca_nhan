@@ -1,3 +1,4 @@
+import 'package:app/views/transaction/add_transaction_screen.dart' show AddTransactionScreen;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/mock_data.dart';
@@ -80,9 +81,13 @@ class DashboardScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Xử lý chuyển sang màn hình thêm giao dịch sau
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddTransactionScreen()),
+          );
         },
-        child: const Icon(Icons.add),
         backgroundColor: Colors.blue.shade600,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
