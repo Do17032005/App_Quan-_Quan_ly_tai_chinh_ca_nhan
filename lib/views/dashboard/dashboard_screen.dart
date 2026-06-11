@@ -136,7 +136,7 @@ class DashboardHomeContent extends StatelessWidget {
                             final category = categories.firstWhere(
                               (cat) => cat.id == tx.categoryId,
                               orElse: () => CategoryModel(
-                                id: 0,
+                                id: '0',
                                 name: 'Khác',
                                 type: 'expense',
                                 iconName: 'help',

@@ -1,33 +1,35 @@
 class CategoryModel {
-  final int? id;
+  final String? id; // Chuyển sang String để hứng Document ID của Firebase
   final String name;
-  final String type; // 'income' (Thu) hoặc 'expense' (Chi)
-  final String iconName; // Tên icon để map với FontAwesomeIcons
+  final String type; // 'income' hoặc 'expense'
+  final String iconName;
+  final String?
+  userId; // Đính kèm UID để phân quyền danh mục của ai người nấy dùng
 
   CategoryModel({
     this.id,
     required this.name,
     required this.type,
     required this.iconName,
+    this.userId,
   });
 
-  // Chuyển đối tượng thành Map để lưu vào SQLite
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
       'type': type,
       'icon_name': iconName,
+      'user_id': userId,
     };
   }
 
-  // Chuyển Map từ SQLite ngược lại thành đối tượng Dart
-  factory CategoryModel.fromMap(Map<String, dynamic> map) {
+  factory CategoryModel.fromMap(String docId, Map<String, dynamic> map) {
     return CategoryModel(
-      id: map['id'],
-      name: map['name'],
-      type: map['type'],
-      iconName: map['icon_name'],
+      id: docId,
+      name: map['name'] ?? '',
+      type: map['type'] ?? 'expense',
+      iconName: map['icon_name'] ?? 'category',
+      userId: map['user_id'],
     );
   }
 }

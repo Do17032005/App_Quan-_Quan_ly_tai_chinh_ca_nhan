@@ -9,40 +9,14 @@ class FinanceProvider with ChangeNotifier {
   final CollectionReference _transactionCollection = FirebaseFirestore.instance
       .collection('transactions');
 
-  List<TransactionModel> _transactions = [];
+  final CollectionReference _categoryCollection = FirebaseFirestore.instance
+      .collection('categories');
 
-  // Danh mục cố định dùng chung cho mọi tài khoản
-  final List<CategoryModel> _categories = [
-    CategoryModel(
-      id: 1,
-      name: 'Ăn uống',
-      type: 'expense',
-      iconName: 'utensils',
-    ),
-    CategoryModel(id: 2, name: 'Di chuyển', type: 'expense', iconName: 'car'),
-    CategoryModel(
-      id: 3,
-      name: 'Mua sắm',
-      type: 'expense',
-      iconName: 'shopping-bag',
-    ),
-    CategoryModel(
-      id: 4,
-      name: 'Giải trí',
-      type: 'expense',
-      iconName: 'gamepad',
-    ),
-    CategoryModel(
-      id: 5,
-      name: 'Tiền lương',
-      type: 'income',
-      iconName: 'money-bill',
-    ),
-    CategoryModel(id: 6, name: 'Thưởng', type: 'income', iconName: 'gift'),
-  ];
+  List<TransactionModel> _transactions = [];
+  List<CategoryModel> _userCategories = [];
 
   List<TransactionModel> get transactions => _transactions;
-  List<CategoryModel> get categories => _categories;
+  List<CategoryModel> get categories => _userCategories;
 
   double get totalIncome => _transactions
       .where((tx) => tx.type == 'income')
@@ -79,13 +53,37 @@ class FinanceProvider with ChangeNotifier {
               documentId: doc.id,
               amount: (data['amount'] as num).toDouble(),
               type: data['type'],
-              categoryId: data['category_id'],
+              categoryId: (data['category_id'] ?? '').toString(),
               date: DateTime.parse(data['date']),
               note: data['note'] ?? '',
             );
           }).toList();
 
           notifyListeners(); // Cập nhật lại giao diện Dashboard thật
+        });
+  }
+
+  // LẮNG NGHE DANH MỤC THÀNH PHẦN (Gọi hàm này chạy song song lúc đăng nhập)
+  void listenToCategories() {
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      _userCategories = [];
+      notifyListeners();
+      return;
+    }
+
+    // Lọc lấy danh mục hệ thống (user_id == null) HOẶC danh mục tự tạo của chính user đó
+    _categoryCollection
+        .where('user_id', whereIn: [null, currentUser.uid])
+        .snapshots()
+        .listen((snapshot) {
+          _userCategories = snapshot.docs.map((doc) {
+            return CategoryModel.fromMap(
+              doc.id,
+              doc.data() as Map<String, dynamic>,
+            );
+          }).toList();
+          notifyListeners();
         });
   }
 
@@ -102,6 +100,34 @@ class FinanceProvider with ChangeNotifier {
       await _transactionCollection.add(txMap);
     } catch (e) {
       print("Lỗi khi thêm dữ liệu phân quyền lên Firebase: $e");
+    }
+  }
+
+  // HÀM USER TỰ THÊM DANH MỤC MỚI
+  Future<void> addCustomCategory(String name, String type) async {
+    try {
+      final User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final newCat = CategoryModel(
+        name: name,
+        type: type,
+        iconName: type == 'expense' ? 'shopping-bag' : 'money-bill',
+        userId: currentUser.uid,
+      );
+
+      await _categoryCollection.add(newCat.toMap());
+    } catch (e) {
+      print("Lỗi thêm danh mục: $e");
+    }
+  }
+
+  // HÀM USER XÓA DANH MỤC TỰ TẠO
+  Future<void> deleteCustomCategory(String catId) async {
+    try {
+      await _categoryCollection.doc(catId).delete();
+    } catch (e) {
+      print("Lỗi xóa danh mục: $e");
     }
   }
 

@@ -169,6 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   );
                                 }
                                 financeProvider.listenToTransactions();
+                                financeProvider.listenToCategories();
                               }
                             }
                           },

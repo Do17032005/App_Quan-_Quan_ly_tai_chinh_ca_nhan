@@ -10,21 +10,17 @@ class DatabaseHelper {
 
   DatabaseHelper._init();
 
-  future<Database> get database async {
+  Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDB('finance.db');
     return _database!;
   }
 
-  async<Database> _initDB(String filePath) async {
+  Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _createDB,
-    );
+    return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
   Future _createDB(Database db, int version) async {
@@ -90,7 +86,9 @@ class DatabaseHelper {
   Future<List<CategoryModel>> getAllCategories() async {
     final db = await instance.database;
     final result = await db.query('categories');
-    return result.map((json) => CategoryModel.fromMap(json)).toList();
+    return result
+        .map((json) => CategoryModel.fromMap(json['id'].toString(), json))
+        .toList();
   }
 
   // Đóng database khi không dùng

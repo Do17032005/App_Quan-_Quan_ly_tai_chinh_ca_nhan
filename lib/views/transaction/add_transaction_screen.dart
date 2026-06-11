@@ -29,6 +29,170 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     super.dispose();
   }
 
+  Future<void> _showManageCategoriesBottomSheet(BuildContext context) async {
+    final financeProvider = Provider.of<FinanceProvider>(
+      context,
+      listen: false,
+    );
+    final catNameController = TextEditingController();
+    String selectedType = 'expense';
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            top: 20,
+            left: 20,
+            right: 20,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Quản Lý Danh Mục',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: catNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Tên danh mục mới',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Khoản chi'),
+                      selected: selectedType == 'expense',
+                      onSelected: (_) =>
+                          setModalState(() => selectedType = 'expense'),
+                    ),
+                    const SizedBox(width: 12),
+                    ChoiceChip(
+                      label: const Text('Khoản thu'),
+                      selected: selectedType == 'income',
+                      onSelected: (_) =>
+                          setModalState(() => selectedType = 'income'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final name = catNameController.text.trim();
+                      if (name.isEmpty) return;
+
+                      await financeProvider.addCustomCategory(
+                        name,
+                        selectedType,
+                      );
+                      catNameController.clear();
+
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Đã thêm danh mục mới!'),
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('THÊM DANH MỤC'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Danh mục hiện có',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: Consumer<FinanceProvider>(
+                    builder: (context, provider, child) {
+                      final categories = provider.categories;
+                      if (categories.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('Chưa có danh mục nào.'),
+                        );
+                      }
+
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: categories.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final category = categories[index];
+                          final isSystemCategory = category.userId == null;
+
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(category.name),
+                            subtitle: Text(
+                              category.type == 'expense'
+                                  ? 'Khoản chi'
+                                  : 'Khoản thu',
+                            ),
+                            trailing: isSystemCategory
+                                ? const Icon(
+                                    Icons.lock_outline,
+                                    size: 20,
+                                    color: Colors.grey,
+                                  )
+                                : IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () async {
+                                      if (category.id == null) return;
+                                      await financeProvider
+                                          .deleteCustomCategory(category.id!);
+                                    },
+                                  ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    catNameController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Gọi danh mục thực tế được tải lên từ Database thông qua Provider
@@ -46,6 +210,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Quản lý danh mục',
+            icon: const Icon(Icons.category_outlined),
+            onPressed: () => _showManageCategoriesBottomSheet(context),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

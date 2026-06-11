@@ -3,7 +3,7 @@ class TransactionModel {
   final String? documentId;
   final double amount;
   final String type; // 'income' hoặc 'expense'
-  final int categoryId; // Khóa ngoại liên kết với Danh mục
+  final String categoryId; // Khóa ngoại liên kết với Danh mục
   final DateTime date;
   final String note;
 
@@ -34,7 +34,7 @@ class TransactionModel {
       documentId: map['documentId'],
       amount: map['amount'],
       type: map['type'],
-      categoryId: map['category_id'],
+      categoryId: (map['category_id'] ?? '').toString(),
       date: DateTime.parse(map['date']),
       note: map['note'],
     );

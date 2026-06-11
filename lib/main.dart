@@ -9,15 +9,17 @@ import 'views/auth/login_screen.dart'; // File giao diện chúng ta sẽ tạo 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => AuthProvider()),
-        ChangeNotifierProvider(create: (context) => FinanceProvider()..listenToTransactions()),
+        ChangeNotifierProvider(
+          create: (context) => FinanceProvider()
+            ..listenToTransactions()
+            ..listenToCategories(),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -41,7 +43,9 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.grey.shade100,
       ),
       // Nếu đã đăng nhập -> Vào thẳng Dashboard, nếu chưa -> Vào màn hình Login
-      home: authProvider.isAuthenticated ? const DashboardScreen() : const LoginScreen(),
+      home: authProvider.isAuthenticated
+          ? const DashboardScreen()
+          : const LoginScreen(),
     );
   }
 }
