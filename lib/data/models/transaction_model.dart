@@ -1,5 +1,6 @@
 class TransactionModel {
   final int? id;
+  final String? documentId;
   final double amount;
   final String type; // 'income' hoặc 'expense'
   final int categoryId; // Khóa ngoại liên kết với Danh mục
@@ -8,6 +9,7 @@ class TransactionModel {
 
   TransactionModel({
     this.id,
+    this.documentId,
     required this.amount,
     required this.type,
     required this.categoryId,
@@ -29,6 +31,7 @@ class TransactionModel {
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
     return TransactionModel(
       id: map['id'],
+      documentId: map['documentId'],
       amount: map['amount'],
       type: map['type'],
       categoryId: map['category_id'],

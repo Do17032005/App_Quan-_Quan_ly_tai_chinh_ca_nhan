@@ -6,18 +6,38 @@ import '../data/models/transaction_model.dart';
 
 class FinanceProvider with ChangeNotifier {
   // Kết nối đến Collection 'transactions' trên Firebase
-  final CollectionReference _transactionCollection =
-  FirebaseFirestore.instance.collection('transactions');
+  final CollectionReference _transactionCollection = FirebaseFirestore.instance
+      .collection('transactions');
 
   List<TransactionModel> _transactions = [];
 
   // Danh mục cố định dùng chung cho mọi tài khoản
   final List<CategoryModel> _categories = [
-    CategoryModel(id: 1, name: 'Ăn uống', type: 'expense', iconName: 'utensils'),
+    CategoryModel(
+      id: 1,
+      name: 'Ăn uống',
+      type: 'expense',
+      iconName: 'utensils',
+    ),
     CategoryModel(id: 2, name: 'Di chuyển', type: 'expense', iconName: 'car'),
-    CategoryModel(id: 3, name: 'Mua sắm', type: 'expense', iconName: 'shopping-bag'),
-    CategoryModel(id: 4, name: 'Giải trí', type: 'expense', iconName: 'gamepad'),
-    CategoryModel(id: 5, name: 'Tiền lương', type: 'income', iconName: 'money-bill'),
+    CategoryModel(
+      id: 3,
+      name: 'Mua sắm',
+      type: 'expense',
+      iconName: 'shopping-bag',
+    ),
+    CategoryModel(
+      id: 4,
+      name: 'Giải trí',
+      type: 'expense',
+      iconName: 'gamepad',
+    ),
+    CategoryModel(
+      id: 5,
+      name: 'Tiền lương',
+      type: 'income',
+      iconName: 'money-bill',
+    ),
     CategoryModel(id: 6, name: 'Thưởng', type: 'income', iconName: 'gift'),
   ];
 
@@ -52,20 +72,21 @@ class FinanceProvider with ChangeNotifier {
         .orderBy('date', descending: true)
         .snapshots()
         .listen((snapshot) {
-      _transactions = snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        return TransactionModel(
-          id: doc.id.hashCode,
-          amount: (data['amount'] as num).toDouble(),
-          type: data['type'],
-          categoryId: data['category_id'],
-          date: DateTime.parse(data['date']),
-          note: data['note'] ?? '',
-        );
-      }).toList();
+          _transactions = snapshot.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return TransactionModel(
+              id: doc.id.hashCode,
+              documentId: doc.id,
+              amount: (data['amount'] as num).toDouble(),
+              type: data['type'],
+              categoryId: data['category_id'],
+              date: DateTime.parse(data['date']),
+              note: data['note'] ?? '',
+            );
+          }).toList();
 
-      notifyListeners(); // Cập nhật lại giao diện Dashboard thật
-    });
+          notifyListeners(); // Cập nhật lại giao diện Dashboard thật
+        });
   }
 
   // HÀM THÊM GIAO DỊCH LÊN FIREBASE (GẮN THÊM USER_ID)
@@ -81,6 +102,34 @@ class FinanceProvider with ChangeNotifier {
       await _transactionCollection.add(txMap);
     } catch (e) {
       print("Lỗi khi thêm dữ liệu phân quyền lên Firebase: $e");
+    }
+  }
+
+  // HÀM XÓA GIAO DỊCH
+  Future<void> deleteTransaction(String documentId) async {
+    try {
+      await _transactionCollection.doc(documentId).delete();
+      // Không cần gọi notifyListeners() vì listenToTransactions() đang lắng nghe realtime sẽ tự cập nhật
+    } catch (e) {
+      print("Lỗi khi xóa giao dịch: $e");
+    }
+  }
+
+  // HÀM SỬA GIAO DỊCH
+  Future<void> updateTransaction(
+    String documentId,
+    TransactionModel updatedTx,
+  ) async {
+    try {
+      final User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final Map<String, dynamic> txMap = updatedTx.toMap();
+      txMap['user_id'] = currentUser.uid;
+
+      await _transactionCollection.doc(documentId).update(txMap);
+    } catch (e) {
+      print("Lỗi khi cập nhật giao dịch: $e");
     }
   }
 }
