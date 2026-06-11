@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../data/models/category_model.dart';
 import '../../providers/finance_provider.dart';
 import '../transaction/add_transaction_screen.dart';
 import 'widgets/balance_card.dart';
@@ -63,7 +64,7 @@ class DashboardScreen extends StatelessWidget {
                             // Tìm danh mục tương ứng từ DB để lấy tên danh mục hiển thị
                             final category = categories.firstWhere(
                               (cat) => cat.id == tx.categoryId,
-                              orElse: () => cat(id: 0, name: 'Khác', type: 'expense', iconName: 'help'),
+                              orElse: () => CategoryModel(id: 0, name: 'Khác', type: 'expense', iconName: 'help'),
                             );
                             
                             final isIncome = tx.type == 'income';

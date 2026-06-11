@@ -52,6 +52,8 @@ dependencies:
   
   firebase_core: ^3.1.1       # Thư viện lõi để khởi tạo Firebase
   cloud_firestore: ^5.0.1     # Thư viện quản lý Cloud Database
+  # Thêm thư viện quản lý đăng nhập bằng Firebase Authentication:
+  firebase_auth: ^5.1.1
 
 dev_dependencies:
   flutter_test:
