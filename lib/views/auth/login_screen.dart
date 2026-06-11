@@ -159,6 +159,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                 }
                               } else {
                                 // Nếu không có lỗi -> Thành công
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Đăng nhập thành công!'),
+                                      backgroundColor: Colors.green,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
                                 financeProvider.listenToTransactions();
                               }
                             }

@@ -17,7 +17,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
-  
+
   String _transactionType = 'expense'; // Mặc định là Chi tiêu
   CategoryModel? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
@@ -33,7 +33,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Widget build(BuildContext context) {
     // Gọi danh mục thực tế được tải lên từ Database thông qua Provider
     final financeProvider = Provider.of<FinanceProvider>(context);
-    
+
     // Lọc danh mục theo loại Thu nhập hoặc Chi tiêu tương ứng
     List<CategoryModel> filteredCategories = financeProvider.categories
         .where((cat) => cat.type == _transactionType)
@@ -41,7 +41,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thêm Giao Dịch', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Thêm Giao Dịch',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -60,14 +63,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       selected: _transactionType == 'expense',
                       selectedColor: Colors.red.shade100,
                       labelStyle: TextStyle(
-                        color: _transactionType == 'expense' ? Colors.red : Colors.black,
+                        color: _transactionType == 'expense'
+                            ? Colors.red
+                            : Colors.black,
                         fontWeight: FontWeight.bold,
                       ),
                       onSelected: (selected) {
                         if (selected) {
                           setState(() {
                             _transactionType = 'expense';
-                            _selectedCategory = null; // Reset lại danh mục đã chọn
+                            _selectedCategory =
+                                null; // Reset lại danh mục đã chọn
                           });
                         }
                       },
@@ -80,14 +86,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       selected: _transactionType == 'income',
                       selectedColor: Colors.green.shade100,
                       labelStyle: TextStyle(
-                        color: _transactionType == 'income' ? Colors.green : Colors.black,
+                        color: _transactionType == 'income'
+                            ? Colors.green
+                            : Colors.black,
                         fontWeight: FontWeight.bold,
                       ),
                       onSelected: (selected) {
                         if (selected) {
                           setState(() {
                             _transactionType = 'income';
-                            _selectedCategory = null; // Reset lại danh mục đã chọn
+                            _selectedCategory =
+                                null; // Reset lại danh mục đã chọn
                           });
                         }
                       },
@@ -102,13 +111,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
                 decoration: InputDecoration(
                   labelText: 'Số tiền',
                   hintText: '0',
-                  prefixIcon: const Icon(Icons.monetization_on, color: Colors.orange),
+                  prefixIcon: const Icon(
+                    Icons.monetization_on,
+                    color: Colors.orange,
+                  ),
                   suffixText: 'đ',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -128,7 +145,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 value: _selectedCategory,
                 hint: const Text('Chọn danh mục chi tiêu/thu nhập'),
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   prefixIcon: const Icon(Icons.category, color: Colors.blue),
                 ),
                 items: filteredCategories.map((CategoryModel category) {
@@ -142,7 +161,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     _selectedCategory = newValue;
                   });
                 },
-                validator: (value) => value == null ? 'Vui lòng chọn danh mục' : null,
+                validator: (value) =>
+                    value == null ? 'Vui lòng chọn danh mục' : null,
               ),
               const SizedBox(height: 20),
 
@@ -164,8 +184,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 child: InputDecorator(
                   decoration: InputDecoration(
                     labelText: 'Ngày giao dịch',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.teal),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.calendar_today,
+                      color: Colors.teal,
+                    ),
                   ),
                   child: Text(
                     DateFormat('dd/MM/yyyy').format(_selectedDate),
@@ -182,7 +207,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 decoration: InputDecoration(
                   labelText: 'Ghi chú (Không bắt buộc)',
                   hintText: 'Ví dụ: Mua giáo trình, Đi ăn cưới...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   prefixIcon: const Icon(Icons.edit_note, color: Colors.grey),
                 ),
               ),
@@ -195,7 +222,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 child: ElevatedButton(
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      // Tạo đối tượng Transaction từ dữ liệu form nhập vào
+                      // 1. Tạo đối tượng Transaction từ dữ liệu form
                       final newTx = TransactionModel(
                         amount: double.parse(_amountController.text),
                         type: _transactionType,
@@ -204,17 +231,49 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         note: _noteController.text.trim(),
                       );
 
-                      // Gọi Provider để ghi trực tiếp xuống SQLite
+                      // 2. Gọi Provider để ghi dữ liệu lên Cloud Firebase
                       await financeProvider.addTransaction(newTx);
 
-                      // Hiển thị thông báo thành công và quay lại màn hình chính
                       if (mounted) {
+                        // 3. HIỂN THỊ THÔNG BÁO NỔI (SnackBar) THÀNH CÔNG ĐẸP MẮT
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Đã lưu giao dịch thành công!'),
-                            backgroundColor: Colors.green,
+                          SnackBar(
+                            content: const Row(
+                              children: [
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Đã lưu giao dịch thành công lên Đám mây!',
+                                ),
+                              ],
+                            ),
+                            backgroundColor: Colors.green.shade600,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            duration: const Duration(
+                              seconds: 2,
+                            ), // Biến mất sau 2 giây
                           ),
                         );
+
+                        // 4. XOÁ TRẮNG DỮ LIỆU TRÊN FORM (CLEAN FORM)
+                        _formKey.currentState!
+                            .reset(); // Reset trạng thái validation của Form
+                        _amountController.clear(); // Xóa chữ trong ô nhập tiền
+                        _noteController.clear(); // Xóa chữ trong ô ghi chú
+                        setState(() {
+                          _transactionType =
+                              'expense'; // Đưa loại về mặc định: Chi tiêu
+                          _selectedCategory = null; // Xóa danh mục đã chọn
+                          _selectedDate = DateTime.now(); // Đưa ngày về hôm nay
+                        });
+
+                        // 5. Quay lại màn hình chính Dashboard
                         Navigator.pop(context);
                       }
                     }
@@ -222,10 +281,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade600,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 2,
                   ),
-                  child: const Text('Lưu Giao Dịch', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Lưu Giao Dịch',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],

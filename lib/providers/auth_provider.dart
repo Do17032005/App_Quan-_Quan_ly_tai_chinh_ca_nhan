@@ -19,7 +19,10 @@ class AuthProvider with ChangeNotifier {
   // HÀM ĐĂNG KÝ TÀI KHOẢN MỚI
   Future<String?> registerWithEmail(String email, String password) async {
     try {
-      await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       return null; // Trả về null nghĩa là không có lỗi -> Thành công
     } on FirebaseAuthException catch (e) {
       return _handleAuthError(e);
@@ -54,8 +57,12 @@ class AuthProvider with ChangeNotifier {
       case 'wrong-password':
       case 'invalid-credential':
         return 'Email hoặc mật khẩu không chính xác.';
+      case 'too-many-requests':
+        return 'Bạn đã thử quá nhiều lần. Vui lòng thử lại sau.';
+      case 'network-request-failed':
+        return 'Không thể kết nối mạng. Vui lòng kiểm tra lại Internet.';
       default:
-        return 'Đã xảy ra lỗi: ${e.message}';
+        return 'Đăng nhập thất bại. Vui lòng thử lại.';
     }
   }
 }
