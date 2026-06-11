@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
-import '../models/category_model.dart';
-import '../models/transaction_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+import '../data/models/category_model.dart';
+import '../data/models/transaction_model.dart';
 
 class FinanceProvider with ChangeNotifier {
+  // Kết nối đến Collection có tên là 'transactions' trên Firebase
+  final CollectionReference _transactionCollection = 
+      FirebaseFirestore.instance.collection('transactions');
+
   List<TransactionModel> _transactions = [];
-  List<CategoryModel> _categories = [];
+  
+  // Tạm thời giữ danh mục cố định (Sau này có thể đưa lên Firebase nốt nếu muốn)
+  final List<CategoryModel> _categories = [
+    CategoryModel(id: 1, name: 'Ăn uống', type: 'expense', iconName: 'utensils'),
+    CategoryModel(id: 2, name: 'Di chuyển', type: 'expense', iconName: 'car'),
+    CategoryModel(id: 3, name: 'Mua sắm', type: 'expense', iconName: 'shopping-bag'),
+    CategoryModel(id: 4, name: 'Giải trí', type: 'expense', iconName: 'gamepad'),
+    CategoryModel(id: 5, name: 'Tiền lương', type: 'income', iconName: 'money-bill'),
+    CategoryModel(id: 6, name: 'Thưởng', type: 'income', iconName: 'gift'),
+  ];
 
   List<TransactionModel> get transactions => _transactions;
   List<CategoryModel> get categories => _categories;
@@ -20,16 +33,33 @@ class FinanceProvider with ChangeNotifier {
 
   double get currentBalance => totalIncome - totalExpense;
 
-  // Tải toàn bộ dữ liệu từ DB lên State
-  Future<void> loadData() async {
-    _categories = await DatabaseHelper.instance.getAllCategories();
-    _transactions = await DatabaseHelper.instance.getAllTransactions();
-    notifyListeners(); // Thông báo cho UI cập nhật lại giao diện
+  // LẮNG NGHE DỮ LIỆU REALTIME TỪ FIREBASE
+  void listenToTransactions() {
+    // Luôn luôn lắng nghe biến động trên Firebase, cứ có thay đổi là tự cập nhật UI
+    _transactionCollection.orderBy('date', descending: true).snapshots().listen((snapshot) {
+      _transactions = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return TransactionModel(
+          id: doc.id.hashCode, // Lấy ID của document trên Firebase làm ID tạm thời
+          amount: (data['amount'] as num).toDouble(),
+          type: data['type'],
+          categoryId: data['category_id'],
+          date: DateTime.parse(data['date']),
+          note: data['note'] ?? '',
+        );
+      }).toList();
+      
+      notifyListeners(); // Báo cho giao diện Dashboard vẽ lại dữ liệu mới
+    });
   }
 
-  // Hàm thêm giao dịch và cập nhật lại danh sách ngay lập tức
+  // HÀM THÊM GIA GIAO DỊCH LÊN FIREBASE
   Future<void> addTransaction(TransactionModel transaction) async {
-    await DatabaseHelper.instance.insertTransaction(transaction);
-    await loadData(); // Tải lại dữ liệu mới sau khi chèn thành công
+    try {
+      // Đẩy object Map của transaction lên thẳng server Firebase
+      await _transactionCollection.add(transaction.toMap());
+    } catch (e) {
+      print("Lỗi khi thêm dữ liệu lên Firebase: $e");
+    }
   }
 }

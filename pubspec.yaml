@@ -49,6 +49,9 @@ dependencies:
 
   # Bộ icon phong phú để làm danh mục chi tiêu
   font_awesome_flutter: ^10.7.0
+  
+  firebase_core: ^3.1.1       # Thư viện lõi để khởi tạo Firebase
+  cloud_firestore: ^5.0.1     # Thư viện quản lý Cloud Database
 
 dev_dependencies:
   flutter_test:
