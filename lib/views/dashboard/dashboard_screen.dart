@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/category_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../transaction/add_transaction_screen.dart';
 import 'widgets/balance_card.dart';
@@ -20,6 +21,15 @@ class DashboardScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            onPressed: () async {
+              // Gọi hàm logout từ AuthProvider (phải đặt listen: false vì nằm trong hàm sự kiện)
+              await Provider.of<AuthProvider>(context, listen: false).logout();
+            },
+          ),
+        ],
       ),
       // Sử dụng Consumer để tự động cập nhật UI khi dữ liệu trong FinanceProvider thay đổi
       body: Consumer<FinanceProvider>(

@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; // Import Firebase Core
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'firebase_options.dart'; // File này sẽ tự động sinh ra sau khi bạn chạy FlutterFire CLI
+import 'firebase_options.dart';
+import 'providers/auth_provider.dart'; // Import AuthProvider
 import 'providers/finance_provider.dart';
 import 'views/dashboard/dashboard_screen.dart';
+import 'views/auth/login_screen.dart'; // File giao diện chúng ta sẽ tạo ở bước sau
 
 void main() async {
-  // Bắt buộc phải có dòng này khi sử dụng async trong hàm main
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Khởi tạo Firebase với cấu hình của hệ điều hành tương ứng
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
   runApp(
-    ChangeNotifierProvider(
-      // Khởi tạo Provider và nạp dữ liệu từ Firebase về
-      create: (context) => FinanceProvider()..listenToTransactions(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(create: (context) => FinanceProvider()..listenToTransactions()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -28,6 +29,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Kiểm tra xem người dùng đã đăng nhập chưa để điều hướng màn hình lúc mở App
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Finance Manager',
@@ -36,7 +40,8 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.grey.shade100,
       ),
-      home: const DashboardScreen(),
+      // Nếu đã đăng nhập -> Vào thẳng Dashboard, nếu chưa -> Vào màn hình Login
+      home: authProvider.isAuthenticated ? const DashboardScreen() : const LoginScreen(),
     );
   }
 }

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import thêm FirebaseAuth
 import '../data/models/category_model.dart';
 import '../data/models/transaction_model.dart';
 
 class FinanceProvider with ChangeNotifier {
-  // Kết nối đến Collection có tên là 'transactions' trên Firebase
-  final CollectionReference _transactionCollection = 
-      FirebaseFirestore.instance.collection('transactions');
+  // Kết nối đến Collection 'transactions' trên Firebase
+  final CollectionReference _transactionCollection =
+  FirebaseFirestore.instance.collection('transactions');
 
   List<TransactionModel> _transactions = [];
-  
-  // Tạm thời giữ danh mục cố định (Sau này có thể đưa lên Firebase nốt nếu muốn)
+
+  // Danh mục cố định dùng chung cho mọi tài khoản
   final List<CategoryModel> _categories = [
     CategoryModel(id: 1, name: 'Ăn uống', type: 'expense', iconName: 'utensils'),
     CategoryModel(id: 2, name: 'Di chuyển', type: 'expense', iconName: 'car'),
@@ -33,14 +34,28 @@ class FinanceProvider with ChangeNotifier {
 
   double get currentBalance => totalIncome - totalExpense;
 
-  // LẮNG NGHE DỮ LIỆU REALTIME TỪ FIREBASE
+  // LẮNG NGHE DỮ LIỆU REALTIME THEO TỪNG TÀI KHOẢN (ĐÃ PHÂN QUYỀN)
   void listenToTransactions() {
-    // Luôn luôn lắng nghe biến động trên Firebase, cứ có thay đổi là tự cập nhật UI
-    _transactionCollection.orderBy('date', descending: true).snapshots().listen((snapshot) {
+    // 1. Lấy thông tin người dùng hiện tại đang đăng nhập
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) {
+      // Nếu chưa đăng nhập hoặc đã đăng xuất -> Xóa sạch danh sách hiển thị trên màn hình
+      _transactions = [];
+      notifyListeners();
+      return;
+    }
+
+    // 2. Sử dụng lệnh .where() để LỌC dữ liệu trên server: chỉ lấy các document có 'user_id' trùng với UID của người này
+    _transactionCollection
+        .where('user_id', isEqualTo: currentUser.uid)
+        .orderBy('date', descending: true)
+        .snapshots()
+        .listen((snapshot) {
       _transactions = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return TransactionModel(
-          id: doc.id.hashCode, // Lấy ID của document trên Firebase làm ID tạm thời
+          id: doc.id.hashCode,
           amount: (data['amount'] as num).toDouble(),
           type: data['type'],
           categoryId: data['category_id'],
@@ -48,18 +63,24 @@ class FinanceProvider with ChangeNotifier {
           note: data['note'] ?? '',
         );
       }).toList();
-      
-      notifyListeners(); // Báo cho giao diện Dashboard vẽ lại dữ liệu mới
+
+      notifyListeners(); // Cập nhật lại giao diện Dashboard thật
     });
   }
 
-  // HÀM THÊM GIA GIAO DỊCH LÊN FIREBASE
+  // HÀM THÊM GIAO DỊCH LÊN FIREBASE (GẮN THÊM USER_ID)
   Future<void> addTransaction(TransactionModel transaction) async {
     try {
-      // Đẩy object Map của transaction lên thẳng server Firebase
-      await _transactionCollection.add(transaction.toMap());
+      final User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Chuyển object Map của transaction ra và ép thêm trường 'user_id' vào trước khi đẩy lên mây
+      final Map<String, dynamic> txMap = transaction.toMap();
+      txMap['user_id'] = currentUser.uid;
+
+      await _transactionCollection.add(txMap);
     } catch (e) {
-      print("Lỗi khi thêm dữ liệu lên Firebase: $e");
+      print("Lỗi khi thêm dữ liệu phân quyền lên Firebase: $e");
     }
   }
 }
