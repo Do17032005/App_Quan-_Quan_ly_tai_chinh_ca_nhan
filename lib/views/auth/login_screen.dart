@@ -28,7 +28,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final financeProvider = Provider.of<FinanceProvider>(context, listen: false);
+    final financeProvider = Provider.of<FinanceProvider>(
+      context,
+      listen: false,
+    );
 
     return Scaffold(
       body: Center(
@@ -41,7 +44,11 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Icon ứng dụng lớn ở trên cùng
-                Icon(Icons.account_balance_wallet, size: 80, color: Colors.blue.shade600),
+                Icon(
+                  Icons.account_balance_wallet,
+                  size: 80,
+                  color: Colors.blue.shade600,
+                ),
                 const SizedBox(height: 16),
                 const Text(
                   'Chào Mừng Trở Lại',
@@ -63,11 +70,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     prefixIcon: const Icon(Icons.email),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Vui lòng nhập Email';
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (value == null || value.isEmpty)
+                      return 'Vui lòng nhập Email';
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Định dạng Email không hợp lệ';
                     }
                     return null;
@@ -83,14 +95,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: 'Mật khẩu',
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscureText ? Icons.visibility : Icons.visibility_off),
-                      onPressed: () => setState(() => _obscureText = !_obscureText),
+                      icon: Icon(
+                        _obscureText ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscureText = !_obscureText),
                     ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Vui lòng nhập mật khẩu';
-                    if (value.length < 6) return 'Mật khẩu phải từ 6 ký tự trở lên';
+                    if (value == null || value.isEmpty)
+                      return 'Vui lòng nhập mật khẩu';
+                    if (value.length < 6)
+                      return 'Mật khẩu phải từ 6 ký tự trở lên';
                     return null;
                   },
                 ),
@@ -100,37 +119,66 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : () async {
-                      if (_formKey.currentState!.validate()) {
-                        setState(() => _isLoading = true);
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            if (_formKey.currentState!.validate()) {
+                              setState(() => _isLoading = true);
 
-                        // Gọi hàm login từ AuthProvider
-                        String? error = await authProvider.loginWithEmail(
-                          _emailController.text.trim(),
-                          _passwordController.text.trim(),
-                        );
+                              // Gọi hàm đăng nhập và hứng chuỗi lỗi trả về
+                              String? error = await authProvider.loginWithEmail(
+                                _emailController.text.trim(),
+                                _passwordController.text.trim(),
+                              );
 
-                        setState(() => _isLoading = false);
+                              setState(() => _isLoading = false);
 
-                        if (error != null) {
-                          // Hiện thông báo nếu có lỗi xảy ra
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(error), backgroundColor: Colors.red),
-                          );
-                        } else {
-                          // Đăng nhập thành công -> Kích hoạt lắng nghe data từ Firebase của user đó
-                          financeProvider.listenToTransactions();
-                        }
-                      }
-                    },
+                              if (error != null) {
+                                // BẮN THÔNG BÁO LỖI TIẾNG VIỆT LÊN MÀN HÌNH (Sai mật khẩu, chưa có tài khoản...)
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.error_outline,
+                                            color: Colors.white,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(child: Text(error)),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.red.shade700,
+                                      behavior: SnackBarBehavior
+                                          .floating, // Hiển thị dạng bong bóng nổi đẹp mắt
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                // Nếu không có lỗi -> Thành công
+                                financeProvider.listenToTransactions();
+                              }
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade600,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('ĐĂNG NHẬP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        : const Text(
+                            'ĐĂNG NHẬP',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -144,12 +192,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterScreen(),
+                          ),
                         );
                       },
                       child: Text(
                         'Đăng ký ngay',
-                        style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],

@@ -29,7 +29,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, foregroundColor: Colors.black),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.black,
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -58,10 +62,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     prefixIcon: const Icon(Icons.email),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Vui lòng nhập Email';
+                    if (value == null || value.isEmpty)
+                      return 'Vui lòng nhập Email';
                     return null;
                   },
                 ),
@@ -74,11 +81,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: 'Mật khẩu',
                     prefixIcon: const Icon(Icons.lock),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Vui lòng nhập mật khẩu';
-                    if (value.length < 6) return 'Mật khẩu phải từ 6 ký tự trở lên';
+                    if (value == null || value.isEmpty)
+                      return 'Vui lòng nhập mật khẩu';
+                    if (value.length < 6)
+                      return 'Mật khẩu phải từ 6 ký tự trở lên';
                     return null;
                   },
                 ),
@@ -91,10 +102,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: 'Xác nhận mật khẩu',
                     prefixIcon: const Icon(Icons.lock_clock),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) {
-                    if (value != _passwordController.text) return 'Mật khẩu xác nhận không khớp';
+                    if (value != _passwordController.text)
+                      return 'Mật khẩu xác nhận không khớp';
                     return null;
                   },
                 ),
@@ -104,37 +118,79 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : () async {
-                      if (_formKey.currentState!.validate()) {
-                        setState(() => _isLoading = true);
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            if (_formKey.currentState!.validate()) {
+                              setState(() => _isLoading = true);
 
-                        String? error = await authProvider.registerWithEmail(
-                          _emailController.text.trim(),
-                          _passwordController.text.trim(),
-                        );
+                              // Gọi hàm đăng ký và hứng chuỗi lỗi trả về từ Firebase
+                              String? error = await authProvider
+                                  .registerWithEmail(
+                                    _emailController.text.trim(),
+                                    _passwordController.text.trim(),
+                                  );
 
-                        setState(() => _isLoading = false);
+                              setState(() => _isLoading = false);
 
-                        if (error != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(error), backgroundColor: Colors.red),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Đăng ký thành công!'), backgroundColor: Colors.green),
-                          );
-                          Navigator.pop(context); // Quay về lại màn hình Login
-                        }
-                      }
-                    },
+                              if (error != null) {
+                                // BẮN THÔNG BÁO NẾU TÀI KHOẢN ĐÃ TỒN TẠI HOẶC CÁC LỖI KHÁC
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.warning_amber_rounded,
+                                            color: Colors.white,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(child: Text(error)),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.orange.shade800,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                // Đăng ký thành công và chưa tồn tại tài khoản trùng
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Tạo tài khoản thành công! Hãy đăng nhập.',
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                  Navigator.pop(
+                                    context,
+                                  ); // Quay về lại màn hình Login
+                                }
+                              }
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade600,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('ĐĂNG KÝ NGAY', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        : const Text(
+                            'ĐĂNG KÝ NGAY',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],
