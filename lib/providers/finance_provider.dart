@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import thêm FirebaseAuth
 import '../data/models/category_model.dart';
@@ -12,11 +13,62 @@ class FinanceProvider with ChangeNotifier {
   final CollectionReference _categoryCollection = FirebaseFirestore.instance
       .collection('categories');
 
+  static final List<CategoryModel> _defaultCategories = [
+    CategoryModel(
+      id: '1',
+      name: 'Ăn uống',
+      type: 'expense',
+      iconName: 'utensils',
+    ),
+    CategoryModel(id: '2', name: 'Di chuyển', type: 'expense', iconName: 'car'),
+    CategoryModel(
+      id: '3',
+      name: 'Mua sắm',
+      type: 'expense',
+      iconName: 'shopping-bag',
+    ),
+    CategoryModel(
+      id: '4',
+      name: 'Giải trí',
+      type: 'expense',
+      iconName: 'gamepad',
+    ),
+    CategoryModel(
+      id: '5',
+      name: 'Tiền lương',
+      type: 'income',
+      iconName: 'money-bill',
+    ),
+    CategoryModel(id: '6', name: 'Thưởng', type: 'income', iconName: 'gift'),
+    CategoryModel(
+      id: '7',
+      name: 'Tiền làm thêm',
+      type: 'income',
+      iconName: 'laptop-code',
+    ),
+  ];
+
   List<TransactionModel> _transactions = [];
-  List<CategoryModel> _userCategories = [];
+  List<CategoryModel> _customCategories = [];
+  StreamSubscription<QuerySnapshot>? _transactionSubscription;
+  StreamSubscription<QuerySnapshot>? _categorySubscription;
+
+  List<CategoryModel> _dedupeCustomCategories(List<CategoryModel> categories) {
+    final seen = <String>{};
+    return categories.where((category) {
+      final key =
+          '${category.userId ?? ''}|${category.type}|${category.name.trim().toLowerCase()}';
+      if (seen.contains(key)) return false;
+      seen.add(key);
+      return true;
+    }).toList();
+  }
 
   List<TransactionModel> get transactions => _transactions;
-  List<CategoryModel> get categories => _userCategories;
+  List<CategoryModel> get categories => [
+    ..._defaultCategories,
+    ..._customCategories,
+  ];
 
   double get totalIncome => _transactions
       .where((tx) => tx.type == 'income')
@@ -34,6 +86,8 @@ class FinanceProvider with ChangeNotifier {
     final User? currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
+      _transactionSubscription?.cancel();
+      _transactionSubscription = null;
       // Nếu chưa đăng nhập hoặc đã đăng xuất -> Xóa sạch danh sách hiển thị trên màn hình
       _transactions = [];
       notifyListeners();
@@ -41,7 +95,8 @@ class FinanceProvider with ChangeNotifier {
     }
 
     // 2. Sử dụng lệnh .where() để LỌC dữ liệu trên server: chỉ lấy các document có 'user_id' trùng với UID của người này
-    _transactionCollection
+    _transactionSubscription?.cancel();
+    _transactionSubscription = _transactionCollection
         .where('user_id', isEqualTo: currentUser.uid)
         .orderBy('date', descending: true)
         .snapshots()
@@ -67,24 +122,27 @@ class FinanceProvider with ChangeNotifier {
   void listenToCategories() {
     final User? currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      _userCategories = [];
+      _categorySubscription?.cancel();
+      _categorySubscription = null;
+      _customCategories = [];
       notifyListeners();
       return;
     }
 
-    // Lọc lấy danh mục hệ thống (user_id == null) HOẶC danh mục tự tạo của chính user đó
-    _categoryCollection
-        .where('user_id', whereIn: [null, currentUser.uid])
-        .snapshots()
-        .listen((snapshot) {
-          _userCategories = snapshot.docs.map((doc) {
+    _categorySubscription?.cancel();
+    _categorySubscription = _categoryCollection.snapshots().listen((snapshot) {
+      _customCategories = snapshot.docs
+          .map((doc) {
             return CategoryModel.fromMap(
               doc.id,
               doc.data() as Map<String, dynamic>,
             );
-          }).toList();
-          notifyListeners();
-        });
+          })
+          .where((category) => category.userId == currentUser.uid)
+          .toList();
+      _customCategories = _dedupeCustomCategories(_customCategories);
+      notifyListeners();
+    });
   }
 
   // HÀM THÊM GIAO DỊCH LÊN FIREBASE (GẮN THÊM USER_ID)
@@ -126,6 +184,10 @@ class FinanceProvider with ChangeNotifier {
   Future<void> deleteCustomCategory(String catId) async {
     try {
       await _categoryCollection.doc(catId).delete();
+      _customCategories = _customCategories
+          .where((category) => category.id != catId)
+          .toList();
+      notifyListeners();
     } catch (e) {
       print("Lỗi xóa danh mục: $e");
     }

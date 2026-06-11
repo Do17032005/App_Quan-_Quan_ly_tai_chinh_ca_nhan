@@ -19,8 +19,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _noteController = TextEditingController();
 
   String _transactionType = 'expense'; // Mặc định là Chi tiêu
-  CategoryModel? _selectedCategory;
+  String? _selectedCategoryId;
   DateTime _selectedDate = DateTime.now();
+
+  CategoryModel? _findCategoryById(
+    List<CategoryModel> categories,
+    String? categoryId,
+  ) {
+    if (categoryId == null) return null;
+    for (final category in categories) {
+      if (category.id == categoryId) {
+        return category;
+      }
+    }
+    return null;
+  }
 
   @override
   void dispose() {
@@ -36,6 +49,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
     final catNameController = TextEditingController();
     String selectedType = 'expense';
+    bool isSubmitting = false;
 
     await showModalBottomSheet(
       context: context,
@@ -104,26 +118,36 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () async {
+                      if (isSubmitting) return;
                       final name = catNameController.text.trim();
                       if (name.isEmpty) return;
 
-                      await financeProvider.addCustomCategory(
-                        name,
-                        selectedType,
-                      );
-                      catNameController.clear();
-
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(this.context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Đã thêm danh mục mới!'),
-                          ),
+                      setModalState(() => isSubmitting = true);
+                      try {
+                        await financeProvider.addCustomCategory(
+                          name,
+                          selectedType,
                         );
+                        catNameController.clear();
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Đã thêm danh mục mới!'),
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (context.mounted) {
+                          setModalState(() => isSubmitting = false);
+                        }
                       }
                     },
                     icon: const Icon(Icons.add),
-                    label: const Text('THÊM DANH MỤC'),
+                    label: Text(
+                      isSubmitting ? 'ĐANG THÊM...' : 'THÊM DANH MỤC',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -136,6 +160,53 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   child: Consumer<FinanceProvider>(
                     builder: (context, provider, child) {
                       final categories = provider.categories;
+                      final systemCategories = categories
+                          .where((category) => category.userId == null)
+                          .toList();
+                      final customCategories = categories
+                          .where((category) => category.userId != null)
+                          .toList();
+
+                      Widget buildCategoryList(List<CategoryModel> items) {
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: items.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final category = items[index];
+                            final isSystemCategory = category.userId == null;
+
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(category.name),
+                              subtitle: Text(
+                                category.type == 'expense'
+                                    ? 'Khoản chi'
+                                    : 'Khoản thu',
+                              ),
+                              trailing: isSystemCategory
+                                  ? const Icon(
+                                      Icons.lock_outline,
+                                      size: 20,
+                                      color: Colors.grey,
+                                    )
+                                  : IconButton(
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () async {
+                                        if (category.id == null) return;
+                                        await financeProvider
+                                            .deleteCustomCategory(category.id!);
+                                      },
+                                    ),
+                            );
+                          },
+                        );
+                      }
+
                       if (categories.isEmpty) {
                         return const Padding(
                           padding: EdgeInsets.symmetric(vertical: 12),
@@ -143,41 +214,29 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         );
                       }
 
-                      return ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: categories.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final category = categories[index];
-                          final isSystemCategory = category.userId == null;
-
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(category.name),
-                            subtitle: Text(
-                              category.type == 'expense'
-                                  ? 'Khoản chi'
-                                  : 'Khoản thu',
-                            ),
-                            trailing: isSystemCategory
-                                ? const Icon(
-                                    Icons.lock_outline,
-                                    size: 20,
-                                    color: Colors.grey,
-                                  )
-                                : IconButton(
-                                    icon: const Icon(
-                                      Icons.delete_outline,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () async {
-                                      if (category.id == null) return;
-                                      await financeProvider
-                                          .deleteCustomCategory(category.id!);
-                                    },
-                                  ),
-                          );
-                        },
+                      return SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (systemCategories.isNotEmpty) ...[
+                              const Text(
+                                'Danh mục hệ thống',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 8),
+                              buildCategoryList(systemCategories),
+                              const SizedBox(height: 16),
+                            ],
+                            if (customCategories.isNotEmpty) ...[
+                              const Text(
+                                'Danh mục của bạn',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 8),
+                              buildCategoryList(customCategories),
+                            ],
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -243,7 +302,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         if (selected) {
                           setState(() {
                             _transactionType = 'expense';
-                            _selectedCategory =
+                            _selectedCategoryId =
                                 null; // Reset lại danh mục đã chọn
                           });
                         }
@@ -266,7 +325,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         if (selected) {
                           setState(() {
                             _transactionType = 'income';
-                            _selectedCategory =
+                            _selectedCategoryId =
                                 null; // Reset lại danh mục đã chọn
                           });
                         }
@@ -313,7 +372,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
               // 3. Dropdown Chọn Danh Mục thực tế từ SQLite
               DropdownButtonFormField<CategoryModel>(
-                value: _selectedCategory,
+                value: _findCategoryById(
+                  filteredCategories,
+                  _selectedCategoryId,
+                ),
                 hint: const Text('Chọn danh mục chi tiêu/thu nhập'),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
@@ -329,11 +391,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 }).toList(),
                 onChanged: (CategoryModel? newValue) {
                   setState(() {
-                    _selectedCategory = newValue;
+                    _selectedCategoryId = newValue?.id;
                   });
                 },
-                validator: (value) =>
-                    value == null ? 'Vui lòng chọn danh mục' : null,
+                validator: (_) => _selectedCategoryId == null
+                    ? 'Vui lòng chọn danh mục'
+                    : null,
               ),
               const SizedBox(height: 20),
 
@@ -397,7 +460,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       final newTx = TransactionModel(
                         amount: double.parse(_amountController.text),
                         type: _transactionType,
-                        categoryId: _selectedCategory!.id!,
+                        categoryId: _selectedCategoryId!,
                         date: _selectedDate,
                         note: _noteController.text.trim(),
                       );
@@ -440,7 +503,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         setState(() {
                           _transactionType =
                               'expense'; // Đưa loại về mặc định: Chi tiêu
-                          _selectedCategory = null; // Xóa danh mục đã chọn
+                          _selectedCategoryId = null; // Xóa danh mục đã chọn
                           _selectedDate = DateTime.now(); // Đưa ngày về hôm nay
                         });
 

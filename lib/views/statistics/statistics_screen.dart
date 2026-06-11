@@ -17,9 +17,24 @@ class StatisticsScreen extends StatelessWidget {
         return Colors.pink; // Mua sắm
       case '4':
         return Colors.purple; // Giải trí
+      case '5':
+        return Colors.green; // Tiền lương
+      case '6':
+        return Colors.amber; // Thưởng
+      case '7':
+        return Colors.teal; // Tiền làm thêm
       default:
         return Colors.grey;
     }
+  }
+
+  String _getCategoryName(FinanceProvider financeProvider, String categoryId) {
+    for (final category in financeProvider.categories) {
+      if (category.id == categoryId) {
+        return category.name;
+      }
+    }
+    return 'Khác';
   }
 
   @override
@@ -117,9 +132,9 @@ class StatisticsScreen extends StatelessWidget {
                     children: categorySums.entries.map((entry) {
                       final categoryId = entry.key;
                       final amount = entry.value;
-                      final cat = financeProvider.categories.firstWhere(
-                        (c) => c.id == categoryId,
-                        orElse: () => financeProvider.categories.first,
+                      final categoryName = _getCategoryName(
+                        financeProvider,
+                        categoryId,
                       );
 
                       return Card(
@@ -137,7 +152,7 @@ class StatisticsScreen extends StatelessWidget {
                             ),
                           ),
                           title: Text(
-                            cat.name,
+                            categoryName,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           trailing: Text(
