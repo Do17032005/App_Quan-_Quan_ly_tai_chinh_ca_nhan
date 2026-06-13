@@ -67,182 +67,311 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           ),
           child: SafeArea(
             top: false,
-            child: Column(
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.8,
+              child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
+                Container(
+                  width: 50,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Quản Lý Danh Mục',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+
+                const SizedBox(height: 20),
+
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.blue.shade700,
+                        Colors.blue.shade400,
+                      ],
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Colors.white24,
+                        child: Icon(
+                          Icons.category,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            "Quản lý danh mục",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            "Thêm hoặc xoá danh mục",
+                            style: TextStyle(
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
+
+                const SizedBox(height: 20),
+
                 TextField(
                   controller: catNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tên danh mục mới',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    hintText: "Nhập tên danh mục...",
+                    prefixIcon: const Icon(Icons.edit_outlined),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+
+                const SizedBox(height: 16),
+
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ChoiceChip(
-                      label: const Text('Khoản chi'),
-                      selected: selectedType == 'expense',
-                      onSelected: (_) =>
-                          setModalState(() => selectedType = 'expense'),
+                    Expanded(
+                      child: ChoiceChip(
+                        showCheckmark: false,
+                        avatar: const Icon(
+                          Icons.arrow_upward,
+                          color: Colors.red,
+                          size: 18,
+                        ),
+                        label: const Text("Khoản chi"),
+                        selected: selectedType == 'expense',
+                        selectedColor: Colors.red.shade100,
+                        onSelected: (_) {
+                          setModalState(() {
+                            selectedType = 'expense';
+                          });
+                        },
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    ChoiceChip(
-                      label: const Text('Khoản thu'),
-                      selected: selectedType == 'income',
-                      onSelected: (_) =>
-                          setModalState(() => selectedType = 'income'),
+                    Expanded(
+                      child: ChoiceChip(
+                        showCheckmark: false,
+                        avatar: const Icon(
+                          Icons.arrow_downward,
+                          color: Colors.green,
+                          size: 18,
+                        ),
+                        label: const Text("Khoản thu"),
+                        selected: selectedType == 'income',
+                        selectedColor: Colors.green.shade100,
+                        onSelected: (_) {
+                          setModalState(() {
+                            selectedType = 'income';
+                          });
+                        },
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+
+                const SizedBox(height: 20),
+
                 SizedBox(
                   width: double.infinity,
+                  height: 52,
                   child: ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: Text(
+                      isSubmitting
+                          ? "ĐANG THÊM..."
+                          : "THÊM DANH MỤC",
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade600,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                     onPressed: () async {
                       if (isSubmitting) return;
+
                       final name = catNameController.text.trim();
+
                       if (name.isEmpty) return;
 
-                      setModalState(() => isSubmitting = true);
+                      setModalState(() {
+                        isSubmitting = true;
+                      });
+
                       try {
                         await financeProvider.addCustomCategory(
                           name,
                           selectedType,
                         );
+
                         catNameController.clear();
 
                         if (context.mounted) {
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(this.context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Đã thêm danh mục mới!'),
+
+                          ScaffoldMessenger.of(this.context)
+                              .showSnackBar(
+                            SnackBar(
+                              backgroundColor: Colors.green,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                BorderRadius.circular(12),
+                              ),
+                              content: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    'Đã thêm danh mục mới!',
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         }
                       } finally {
                         if (context.mounted) {
-                          setModalState(() => isSubmitting = false);
+                          setModalState(() {
+                            isSubmitting = false;
+                          });
                         }
                       }
                     },
-                    icon: const Icon(Icons.add),
-                    label: Text(
-                      isSubmitting ? 'ĐANG THÊM...' : 'THÊM DANH MỤC',
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Danh mục hiện có",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Danh mục hiện có',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                Flexible(
+
+                const SizedBox(height: 12),
+
+                Expanded(
                   child: Consumer<FinanceProvider>(
                     builder: (context, provider, child) {
                       final categories = provider.categories;
-                      final systemCategories = categories
-                          .where((category) => category.userId == null)
-                          .toList();
-                      final customCategories = categories
-                          .where((category) => category.userId != null)
-                          .toList();
 
-                      Widget buildCategoryList(List<CategoryModel> items) {
-                        return ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: items.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final category = items[index];
-                            final isSystemCategory = category.userId == null;
+                      if (categories.isEmpty) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Text(
+                              "Chưa có danh mục nào",
+                            ),
+                          ),
+                        );
+                      }
 
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(category.name),
+                      return ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        shrinkWrap: true,
+                        itemCount: categories.length,
+                        itemBuilder: (context, index) {
+                          final category = categories[index];
+                          final isSystem =
+                              category.userId == null;
+
+                          return Card(
+                            elevation: 1,
+                            margin:
+                            const EdgeInsets.only(bottom: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                              BorderRadius.circular(14),
+                            ),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor:
+                                category.type == 'expense'
+                                    ? Colors.red.shade50
+                                    : Colors.green.shade50,
+                                child: Icon(
+                                  category.type == 'expense'
+                                      ? Icons.arrow_upward
+                                      : Icons.arrow_downward,
+                                  color:
+                                  category.type == 'expense'
+                                      ? Colors.red
+                                      : Colors.green,
+                                ),
+                              ),
+                              title: Text(
+                                category.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               subtitle: Text(
                                 category.type == 'expense'
                                     ? 'Khoản chi'
                                     : 'Khoản thu',
                               ),
-                              trailing: isSystemCategory
+                              trailing: isSystem
                                   ? const Icon(
-                                      Icons.lock_outline,
-                                      size: 20,
-                                      color: Colors.grey,
-                                    )
+                                Icons.lock_outline,
+                                color: Colors.grey,
+                              )
                                   : IconButton(
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () async {
-                                        if (category.id == null) return;
-                                        await financeProvider
-                                            .deleteCustomCategory(category.id!);
-                                      },
-                                    ),
-                            );
-                          },
-                        );
-                      }
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () async {
+                                  if (category.id == null)
+                                    return;
 
-                      if (categories.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text('Chưa có danh mục nào.'),
-                        );
-                      }
-
-                      return SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (systemCategories.isNotEmpty) ...[
-                              const Text(
-                                'Danh mục hệ thống',
-                                style: TextStyle(fontWeight: FontWeight.w600),
+                                  await financeProvider
+                                      .deleteCustomCategory(
+                                    category.id!,
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 8),
-                              buildCategoryList(systemCategories),
-                              const SizedBox(height: 16),
-                            ],
-                            if (customCategories.isNotEmpty) ...[
-                              const Text(
-                                'Danh mục của bạn',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 8),
-                              buildCategoryList(customCategories),
-                            ],
-                          ],
-                        ),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
                 ),
+
                 const SizedBox(height: 12),
               ],
+            ),
             ),
           ),
         ),
@@ -264,6 +393,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.lightBlueAccent,
         title: const Text(
           'Thêm Giao Dịch',
           style: TextStyle(fontWeight: FontWeight.bold),
