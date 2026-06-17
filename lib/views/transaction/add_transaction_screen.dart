@@ -20,6 +20,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   String _transactionType = 'expense'; // Mặc định là Chi tiêu
   String? _selectedCategoryId;
+  String? _categoryError;
   DateTime _selectedDate = DateTime.now();
 
   CategoryModel? _findCategoryById(
@@ -70,308 +71,286 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.8,
               child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 50,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(20),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 50,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.blue.shade700,
-                        Colors.blue.shade400,
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: [Colors.blue.shade700, Colors.blue.shade400],
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Colors.white24,
+                          child: Icon(Icons.category, color: Colors.white),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              "Quản lý danh mục",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              "Thêm hoặc xoá danh mục",
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
-                  child: Row(
+
+                  const SizedBox(height: 20),
+
+                  TextField(
+                    controller: catNameController,
+                    decoration: InputDecoration(
+                      hintText: "Nhập tên danh mục...",
+                      prefixIcon: const Icon(Icons.edit_outlined),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  Row(
                     children: [
-                      const CircleAvatar(
-                        radius: 24,
-                        backgroundColor: Colors.white24,
-                        child: Icon(
-                          Icons.category,
-                          color: Colors.white,
+                      Expanded(
+                        child: ChoiceChip(
+                          showCheckmark: false,
+                          avatar: const Icon(
+                            Icons.arrow_upward,
+                            color: Colors.red,
+                            size: 18,
+                          ),
+                          label: const Text("Khoản chi"),
+                          selected: selectedType == 'expense',
+                          selectedColor: Colors.red.shade100,
+                          onSelected: (_) {
+                            setModalState(() {
+                              selectedType = 'expense';
+                            });
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "Quản lý danh mục",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      Expanded(
+                        child: ChoiceChip(
+                          showCheckmark: false,
+                          avatar: const Icon(
+                            Icons.arrow_downward,
+                            color: Colors.green,
+                            size: 18,
                           ),
-                          Text(
-                            "Thêm hoặc xoá danh mục",
-                            style: TextStyle(
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
+                          label: const Text("Khoản thu"),
+                          selected: selectedType == 'income',
+                          selectedColor: Colors.green.shade100,
+                          onSelected: (_) {
+                            setModalState(() {
+                              selectedType = 'income';
+                            });
+                          },
+                        ),
                       ),
                     ],
                   ),
-                ),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                TextField(
-                  controller: catNameController,
-                  decoration: InputDecoration(
-                    hintText: "Nhập tên danh mục...",
-                    prefixIcon: const Icon(Icons.edit_outlined),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: Text(
+                        isSubmitting ? "ĐANG THÊM..." : "THÊM DANH MỤC",
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade600,
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (isSubmitting) return;
+
+                        final name = catNameController.text.trim();
+
+                        if (name.isEmpty) return;
+
+                        setModalState(() {
+                          isSubmitting = true;
+                        });
+
+                        try {
+                          await financeProvider.addCustomCategory(
+                            name,
+                            selectedType,
+                          );
+
+                          catNameController.clear();
+
+                          if (context.mounted) {
+                            Navigator.pop(context);
+
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                content: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: Colors.white,
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text('Đã thêm danh mục mới!'),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (context.mounted) {
+                            setModalState(() {
+                              isSubmitting = false;
+                            });
+                          }
+                        }
+                      },
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: ChoiceChip(
-                        showCheckmark: false,
-                        avatar: const Icon(
-                          Icons.arrow_upward,
-                          color: Colors.red,
-                          size: 18,
-                        ),
-                        label: const Text("Khoản chi"),
-                        selected: selectedType == 'expense',
-                        selectedColor: Colors.red.shade100,
-                        onSelected: (_) {
-                          setModalState(() {
-                            selectedType = 'expense';
-                          });
-                        },
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Danh mục hiện có",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade800,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ChoiceChip(
-                        showCheckmark: false,
-                        avatar: const Icon(
-                          Icons.arrow_downward,
-                          color: Colors.green,
-                          size: 18,
-                        ),
-                        label: const Text("Khoản thu"),
-                        selected: selectedType == 'income',
-                        selectedColor: Colors.green.shade100,
-                        onSelected: (_) {
-                          setModalState(() {
-                            selectedType = 'income';
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: Text(
-                      isSubmitting
-                          ? "ĐANG THÊM..."
-                          : "THÊM DANH MỤC",
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade600,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () async {
-                      if (isSubmitting) return;
+                  Expanded(
+                    child: Consumer<FinanceProvider>(
+                      builder: (context, provider, child) {
+                        final categories = provider.categories;
 
-                      final name = catNameController.text.trim();
+                        if (categories.isEmpty) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(20),
+                              child: Text("Chưa có danh mục nào"),
+                            ),
+                          );
+                        }
 
-                      if (name.isEmpty) return;
+                        return ListView.builder(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          shrinkWrap: true,
+                          itemCount: categories.length,
+                          itemBuilder: (context, index) {
+                            final category = categories[index];
+                            final isSystem = category.userId == null;
 
-                      setModalState(() {
-                        isSubmitting = true;
-                      });
-
-                      try {
-                        await financeProvider.addCustomCategory(
-                          name,
-                          selectedType,
-                        );
-
-                        catNameController.clear();
-
-                        if (context.mounted) {
-                          Navigator.pop(context);
-
-                          ScaffoldMessenger.of(this.context)
-                              .showSnackBar(
-                            SnackBar(
-                              backgroundColor: Colors.green,
-                              behavior: SnackBarBehavior.floating,
+                            return Card(
+                              elevation: 1,
+                              margin: const EdgeInsets.only(bottom: 8),
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(14),
                               ),
-                              content: const Row(
-                                children: [
-                                  Icon(
-                                    Icons.check_circle,
-                                    color: Colors.white,
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: category.type == 'expense'
+                                      ? Colors.red.shade50
+                                      : Colors.green.shade50,
+                                  child: Icon(
+                                    category.type == 'expense'
+                                        ? Icons.arrow_upward
+                                        : Icons.arrow_downward,
+                                    color: category.type == 'expense'
+                                        ? Colors.red
+                                        : Colors.green,
                                   ),
-                                  SizedBox(width: 10),
-                                  Text(
-                                    'Đã thêm danh mục mới!',
+                                ),
+                                title: Text(
+                                  category.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                ],
+                                ),
+                                subtitle: Text(
+                                  category.type == 'expense'
+                                      ? 'Khoản chi'
+                                      : 'Khoản thu',
+                                ),
+                                trailing: isSystem
+                                    ? const Icon(
+                                        Icons.lock_outline,
+                                        color: Colors.grey,
+                                      )
+                                    : IconButton(
+                                        icon: const Icon(
+                                          Icons.delete_outline,
+                                          color: Colors.red,
+                                        ),
+                                        onPressed: () async {
+                                          if (category.id == null) return;
+
+                                          await financeProvider
+                                              .deleteCustomCategory(
+                                                category.id!,
+                                              );
+                                        },
+                                      ),
                               ),
-                            ),
-                          );
-                        }
-                      } finally {
-                        if (context.mounted) {
-                          setModalState(() {
-                            isSubmitting = false;
-                          });
-                        }
-                      }
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Danh mục hiện có",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 12),
-
-                Expanded(
-                  child: Consumer<FinanceProvider>(
-                    builder: (context, provider, child) {
-                      final categories = provider.categories;
-
-                      if (categories.isEmpty) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Text(
-                              "Chưa có danh mục nào",
-                            ),
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        shrinkWrap: true,
-                        itemCount: categories.length,
-                        itemBuilder: (context, index) {
-                          final category = categories[index];
-                          final isSystem =
-                              category.userId == null;
-
-                          return Card(
-                            elevation: 1,
-                            margin:
-                            const EdgeInsets.only(bottom: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(14),
-                            ),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                category.type == 'expense'
-                                    ? Colors.red.shade50
-                                    : Colors.green.shade50,
-                                child: Icon(
-                                  category.type == 'expense'
-                                      ? Icons.arrow_upward
-                                      : Icons.arrow_downward,
-                                  color:
-                                  category.type == 'expense'
-                                      ? Colors.red
-                                      : Colors.green,
-                                ),
-                              ),
-                              title: Text(
-                                category.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              subtitle: Text(
-                                category.type == 'expense'
-                                    ? 'Khoản chi'
-                                    : 'Khoản thu',
-                              ),
-                              trailing: isSystem
-                                  ? const Icon(
-                                Icons.lock_outline,
-                                color: Colors.grey,
-                              )
-                                  : IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () async {
-                                  if (category.id == null)
-                                    return;
-
-                                  await financeProvider
-                                      .deleteCustomCategory(
-                                    category.id!,
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-              ],
-            ),
+                  const SizedBox(height: 12),
+                ],
+              ),
             ),
           ),
         ),
@@ -484,7 +463,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                   suffixText: 'đ',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey.shade700),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: Colors.orange.shade400,
+                      width: 2,
+                    ),
                   ),
                 ),
                 validator: (value) {
@@ -501,33 +492,115 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               const SizedBox(height: 20),
 
               // 3. Dropdown Chọn Danh Mục thực tế từ SQLite
-              DropdownButtonFormField<CategoryModel>(
-                value: _findCategoryById(
+              DropdownMenu<CategoryModel>(
+                width: MediaQuery.of(context).size.width - 24,
+
+                initialSelection: _findCategoryById(
                   filteredCategories,
                   _selectedCategoryId,
                 ),
-                hint: const Text('Chọn danh mục chi tiêu/thu nhập'),
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+
+                menuStyle: MenuStyle(
+                  backgroundColor: WidgetStatePropertyAll(
+                    Colors.grey.shade50,
                   ),
-                  prefixIcon: const Icon(Icons.category, color: Colors.blue),
+                  shape: WidgetStatePropertyAll(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                          color: Colors.blue, width: 2,
+                      ),
+                    ),
+                  ),
+                  elevation: const WidgetStatePropertyAll(4),
                 ),
-                items: filteredCategories.map((CategoryModel category) {
-                  return DropdownMenuItem<CategoryModel>(
+
+                hintText: 'Chọn danh mục chi tiêu/thu nhập',
+
+                leadingIcon: const Icon(
+                    Icons.category_outlined,
+                    color: Colors.blue,
+                  ),
+
+                trailingIcon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Colors.blue,
+                ),
+
+                menuHeight: 250,
+
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+
+                inputDecorationTheme: InputDecorationTheme(
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 20,
+                  ),
+
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey.shade700),
+                  ),
+
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.blue, width: 2),
+                  ),
+                ),
+
+                dropdownMenuEntries: filteredCategories.map((category) {
+                  return DropdownMenuEntry<CategoryModel>(
                     value: category,
-                    child: Text(category.name),
+                    label: category.name,
+
+                    leadingIcon: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: category.type == 'expense'
+                            ? Colors.red.shade50
+                            : Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        category.type == 'expense'
+                            ? Icons.trending_up
+                            : Icons.trending_down,
+                        color: category.type == 'expense'
+                            ? Colors.red
+                            : Colors.green,
+                        size: 18,
+                      ),
+                    ),
                   );
                 }).toList(),
-                onChanged: (CategoryModel? newValue) {
+
+                onSelected: (CategoryModel? category) {
                   setState(() {
-                    _selectedCategoryId = newValue?.id;
+                    _selectedCategoryId = category?.id;
+                    _categoryError = null;
                   });
                 },
-                validator: (_) => _selectedCategoryId == null
-                    ? 'Vui lòng chọn danh mục'
-                    : null,
               ),
+              if (_categoryError != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, top: 6),
+                  child: Text(
+                    _categoryError!,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                ),
               const SizedBox(height: 20),
 
               // 4. Ô Chọn Ngày (DatePicker)
@@ -572,7 +645,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   labelText: 'Ghi chú (Không bắt buộc)',
                   hintText: 'Ví dụ: Mua giáo trình, Đi ăn cưới...',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey.shade700),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: Colors.grey.shade600,
+                      width: 2,
+                    ),
                   ),
                   prefixIcon: const Icon(Icons.edit_note, color: Colors.grey),
                 ),
@@ -585,74 +670,101 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      // 1. Tạo đối tượng Transaction từ dữ liệu form
-                      final newTx = TransactionModel(
-                        amount: double.parse(_amountController.text),
-                        type: _transactionType,
-                        categoryId: _selectedCategoryId!,
-                        date: _selectedDate,
-                        note: _noteController.text.trim(),
-                      );
-
-                      // 2. Gọi Provider để ghi dữ liệu lên Cloud Firebase
-                      await financeProvider.addTransaction(newTx);
-
-                      if (mounted) {
-                        // 3. HIỂN THỊ THÔNG BÁO NỔI (SnackBar) THÀNH CÔNG ĐẸP MẮT
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Row(
-                              children: [
-                                Icon(
-                                  Icons.check_circle_outline,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Đã lưu giao dịch thành công lên Đám mây!',
-                                ),
-                              ],
-                            ),
-                            backgroundColor: Colors.green.shade600,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            duration: const Duration(
-                              seconds: 2,
-                            ), // Biến mất sau 2 giây
-                          ),
-                        );
-
-                        // 4. XOÁ TRẮNG DỮ LIỆU TRÊN FORM (CLEAN FORM)
-                        _formKey.currentState!
-                            .reset(); // Reset trạng thái validation của Form
-                        _amountController.clear(); // Xóa chữ trong ô nhập tiền
-                        _noteController.clear(); // Xóa chữ trong ô ghi chú
-                        setState(() {
-                          _transactionType =
-                              'expense'; // Đưa loại về mặc định: Chi tiêu
-                          _selectedCategoryId = null; // Xóa danh mục đã chọn
-                          _selectedDate = DateTime.now(); // Đưa ngày về hôm nay
-                        });
-
-                        // 5. Quay lại màn hình chính Dashboard
-                        Navigator.pop(context);
-                      }
+                    final isFormValid = _formKey.currentState!.validate();
+                    // Validate DropdownMenu
+                    if (_selectedCategoryId == null) {
+                      setState(() {
+                        _categoryError = 'Vui lòng chọn danh mục';
+                      });
+                    } else {
+                      setState(() {
+                        _categoryError = null;
+                      });
                     }
+
+                    if (!isFormValid || _selectedCategoryId == null) {
+                      return;
+                    }
+
+                    // 1. Tạo đối tượng Transaction từ dữ liệu form
+                    final newTx = TransactionModel(
+                      amount: double.parse(_amountController.text),
+                      type: _transactionType,
+                      categoryId: _selectedCategoryId!,
+                      date: _selectedDate,
+                      note: _noteController.text.trim(),
+                    );
+
+                    // 2. Gọi Provider để ghi dữ liệu lên Cloud Firebase
+                    await financeProvider.addTransaction(newTx);
+
+                    if (!mounted) return;
+                    // 3. HIỂN THỊ THÔNG BÁO NỔI (SnackBar) THÀNH CÔNG ĐẸP MẮT
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              color: Colors.white,
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text('Đã lưu giao dịch thành công!'),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: Colors.green.shade600,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        duration: const Duration(
+                          seconds: 2,
+                        ), // Biến mất sau 2 giây
+                      ),
+                    );
+
+                    // 4. XOÁ TRẮNG DỮ LIỆU TRÊN FORM (CLEAN FORM)
+                    _formKey.currentState!
+                        .reset(); // Reset trạng thái validation của Form
+
+                    _amountController.clear(); // Xóa chữ trong ô nhập tiền
+                    _noteController.clear(); //Xóa chữ trong ô ghi chú
+
+                    setState(() {
+                      _transactionType =
+                          'expense'; // Đưa loại về mặc định: Chi tiêu
+                      _selectedCategoryId = null; // Xóa danh mục đã chọn
+                      _selectedDate = DateTime.now(); // Đưa ngày về hôm nay
+                      _categoryError = null;
+                    });
+
+                    // 5. Quay lại màn hình chính Dashboard
+                    Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade600,
                     foregroundColor: Colors.white,
+                    elevation: 4,
+                    shadowColor: Colors.blue.withOpacity(0.3),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    elevation: 2,
                   ),
-                  child: const Text(
-                    'Lưu Giao Dịch',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.save_rounded),
+                      SizedBox(width: 8),
+                      Text(
+                        'Lưu Giao Dịch',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
