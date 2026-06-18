@@ -54,7 +54,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         selectedItemColor: Colors.blue.shade700,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Trang chủ'
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.pie_chart),
             label: 'Thống kê',
@@ -82,6 +85,7 @@ class DashboardHomeContent extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
+        //logout
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.red),
