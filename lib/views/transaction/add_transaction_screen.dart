@@ -5,11 +5,8 @@ import 'package:provider/provider.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
-<<<<<<< HEAD
 import '../../main.dart'; // Thêm import này
-=======
 import 'widgets/numeric_calculator_keyboard.dart';
->>>>>>> 2493e6d665a4a02906eb39f5a83156e2c975a7c6
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({Key? key}) : super(key: key);
@@ -126,59 +123,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     ),
                   ),
 
-<<<<<<< HEAD
-                      setModalState(() => isSubmitting = true);
-                      bool success = false;
-                      try {
-                        await financeProvider.addCustomCategory(
-                          name,
-                          selectedType,
-                        );
-                        success = true;
-                        catNameController.clear();
-                      } catch (e) {
-                        // Lỗi đã được xử lý trong provider
-                      }
-
-                      // Chỉ cập nhật state nếu widget còn mounted
-                      if (!context.mounted) return;
-
-                      if (success) {
-                        Navigator.pop(context);
-                        // Sử dụng key toàn cục để tránh lỗi context
-                        scaffoldMessengerKey.currentState?.showSnackBar(
-                          const SnackBar(
-                            content: Text('Đã thêm danh mục mới!'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      } else {
-                        setModalState(() => isSubmitting = false);
-                      }
-                    },
-                    icon: const Icon(Icons.add),
-                    label: Text(
-                      isSubmitting ? 'ĐANG THÊM...' : 'THÊM DANH MỤC',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Danh mục hiện có',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                Flexible(
-                  child: Consumer<FinanceProvider>(
-                    builder: (context, provider, child) {
-                      final categories = provider.categories;
-                      final systemCategories = categories
-                          .where((category) => category.userId == null)
-                          .toList();
-                      final customCategories = categories
-                          .where((category) => category.userId != null)
-                          .toList();
-=======
                   const SizedBox(height: 20),
 
                   TextField(
@@ -261,50 +205,48 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         if (isSubmitting) return;
 
                         final name = catNameController.text.trim();
-
                         if (name.isEmpty) return;
 
-                        setModalState(() {
-                          isSubmitting = true;
-                        });
-
+                        setModalState(() => isSubmitting = true);
+                        bool success = false;
                         try {
                           await financeProvider.addCustomCategory(
                             name,
                             selectedType,
                           );
-
+                          success = true;
                           catNameController.clear();
+                        } catch (e) {
+                          // Lỗi đã được xử lý trong provider
+                        }
 
-                          if (context.mounted) {
-                            Navigator.pop(context);
+                        // Chỉ cập nhật state nếu widget còn mounted
+                        if (!context.mounted) return;
 
-                            ScaffoldMessenger.of(this.context).showSnackBar(
-                              SnackBar(
-                                backgroundColor: Colors.green,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                content: const Row(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle,
-                                      color: Colors.white,
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text('Đã thêm danh mục mới!'),
-                                  ],
-                                ),
+                        if (success) {
+                          Navigator.pop(context);
+                          // Sử dụng key toàn cục để tránh lỗi context
+                          scaffoldMessengerKey.currentState?.showSnackBar(
+                            SnackBar(
+                              backgroundColor: Colors.green,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            );
-                          }
-                        } finally {
-                          if (context.mounted) {
-                            setModalState(() {
-                              isSubmitting = false;
-                            });
-                          }
+                              content: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text('Đã thêm danh mục mới!'),
+                                ],
+                              ),
+                            ),
+                          );
+                        } else {
+                          setModalState(() => isSubmitting = false);
                         }
                       },
                     ),
@@ -339,7 +281,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                             ),
                           );
                         }
->>>>>>> 2493e6d665a4a02906eb39f5a83156e2c975a7c6
 
                         return ListView.builder(
                           padding: const EdgeInsets.only(bottom: 20),
@@ -392,7 +333,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                         ),
                                         onPressed: () async {
                                           if (category.id == null) return;
-
                                           await financeProvider
                                               .deleteCustomCategory(
                                                 category.id!,
@@ -580,9 +520,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   shape: WidgetStatePropertyAll(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                          color: Colors.blue, width: 2,
-                      ),
+                      side: const BorderSide(color: Colors.blue, width: 2),
                     ),
                   ),
                   elevation: const WidgetStatePropertyAll(4),
@@ -591,9 +529,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 hintText: 'Chọn danh mục chi tiêu/thu nhập',
 
                 leadingIcon: const Icon(
-                    Icons.category_outlined,
-                    color: Colors.blue,
-                  ),
+                  Icons.category_outlined,
+                  color: Colors.blue,
+                ),
 
                 trailingIcon: const Icon(
                   Icons.keyboard_arrow_down_rounded,
@@ -628,7 +566,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.blue, width: 2),
+                    borderSide: const BorderSide(color: Colors.blue, width: 2),
                   ),
                 ),
 
@@ -636,7 +574,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   return DropdownMenuEntry<CategoryModel>(
                     value: category,
                     label: category.name,
-
                     leadingIcon: Container(
                       width: 36,
                       height: 36,
@@ -743,63 +680,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () async {
-<<<<<<< HEAD
-                    if (_formKey.currentState!.validate()) {
-                      // 1. Tạo đối tượng Transaction từ dữ liệu form
-                      final newTx = TransactionModel(
-                        amount: double.parse(_amountController.text),
-                        type: _transactionType,
-                        categoryId: _selectedCategoryId!,
-                        date: _selectedDate,
-                        note: _noteController.text.trim(),
-                      );
-
-                      // 2. Gọi Provider để ghi dữ liệu lên Cloud Firebase
-                      await financeProvider.addTransaction(newTx);
-
-                      if (mounted) {
-                        // Sử dụng key toàn cục để tránh lỗi
-                        scaffoldMessengerKey.currentState?.showSnackBar(
-                          SnackBar(
-                            content: const Row(
-                              children: [
-                                Icon(
-                                  Icons.check_circle_outline,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Đã lưu giao dịch thành công lên Đám mây!',
-                                ),
-                              ],
-                            ),
-                            backgroundColor: Colors.green.shade600,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-
-                        // 4. XOÁ TRẮNG DỮ LIỆU TRÊN FORM (CLEAN FORM)
-                        _formKey.currentState!
-                            .reset(); // Reset trạng thái validation của Form
-                        _amountController.clear(); // Xóa chữ trong ô nhập tiền
-                        _noteController.clear(); // Xóa chữ trong ô ghi chú
-                        setState(() {
-                          _transactionType =
-                              'expense'; // Đưa loại về mặc định: Chi tiêu
-                          _selectedCategoryId = null; // Xóa danh mục đã chọn
-                          _selectedDate = DateTime.now(); // Đưa ngày về hôm nay
-                        });
-
-                        // 5. Quay lại màn hình chính Dashboard
-                        Navigator.pop(context);
-                      }
-=======
                     final isFormValid = _formKey.currentState!.validate();
-                    // Validate DropdownMenu
+                    // Validate DropdownMenu thủ công vì DropdownMenu không có validator
                     if (_selectedCategoryId == null) {
                       setState(() {
                         _categoryError = 'Vui lòng chọn danh mục';
@@ -808,7 +690,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       setState(() {
                         _categoryError = null;
                       });
->>>>>>> 2493e6d665a4a02906eb39f5a83156e2c975a7c6
                     }
 
                     if (!isFormValid || _selectedCategoryId == null) {
@@ -828,6 +709,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     await financeProvider.addTransaction(newTx);
 
                     if (!mounted) return;
+
                     // 3. HIỂN THỊ THÔNG BÁO NỔI (SnackBar) THÀNH CÔNG ĐẸP MẮT
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -848,24 +730,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        duration: const Duration(
-                          seconds: 2,
-                        ), // Biến mất sau 2 giây
+                        duration: const Duration(seconds: 2),
                       ),
                     );
 
                     // 4. XOÁ TRẮNG DỮ LIỆU TRÊN FORM (CLEAN FORM)
-                    _formKey.currentState!
-                        .reset(); // Reset trạng thái validation của Form
-
-                    _amountController.clear(); // Xóa chữ trong ô nhập tiền
-                    _noteController.clear(); //Xóa chữ trong ô ghi chú
+                    _formKey.currentState!.reset();
+                    _amountController.clear();
+                    _noteController.clear();
 
                     setState(() {
-                      _transactionType =
-                          'expense'; // Đưa loại về mặc định: Chi tiêu
-                      _selectedCategoryId = null; // Xóa danh mục đã chọn
-                      _selectedDate = DateTime.now(); // Đưa ngày về hôm nay
+                      _transactionType = 'expense';
+                      _selectedCategoryId = null;
+                      _selectedDate = DateTime.now();
                       _categoryError = null;
                     });
 
