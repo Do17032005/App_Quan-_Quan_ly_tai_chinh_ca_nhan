@@ -7,6 +7,9 @@ import 'providers/finance_provider.dart';
 import 'views/dashboard/dashboard_screen.dart';
 import 'views/auth/login_screen.dart'; // File giao diện chúng ta sẽ tạo ở bước sau
 
+// Key toàn cục để quản lý thông báo (SnackBar) mà không bị lỗi context
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -35,6 +38,7 @@ class MyApp extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return MaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       title: 'Finance Manager',
       theme: ThemeData(

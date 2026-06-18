@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
+import '../../main.dart'; // Thêm import này
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({Key? key}) : super(key: key);
@@ -123,25 +124,32 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       if (name.isEmpty) return;
 
                       setModalState(() => isSubmitting = true);
+                      bool success = false;
                       try {
                         await financeProvider.addCustomCategory(
                           name,
                           selectedType,
                         );
+                        success = true;
                         catNameController.clear();
+                      } catch (e) {
+                        // Lỗi đã được xử lý trong provider
+                      }
 
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(this.context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Đã thêm danh mục mới!'),
-                            ),
-                          );
-                        }
-                      } finally {
-                        if (context.mounted) {
-                          setModalState(() => isSubmitting = false);
-                        }
+                      // Chỉ cập nhật state nếu widget còn mounted
+                      if (!context.mounted) return;
+
+                      if (success) {
+                        Navigator.pop(context);
+                        // Sử dụng key toàn cục để tránh lỗi context
+                        scaffoldMessengerKey.currentState?.showSnackBar(
+                          const SnackBar(
+                            content: Text('Đã thêm danh mục mới!'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      } else {
+                        setModalState(() => isSubmitting = false);
                       }
                     },
                     icon: const Icon(Icons.add),
@@ -469,8 +477,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       await financeProvider.addTransaction(newTx);
 
                       if (mounted) {
-                        // 3. HIỂN THỊ THÔNG BÁO NỔI (SnackBar) THÀNH CÔNG ĐẸP MẮT
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        // Sử dụng key toàn cục để tránh lỗi
+                        scaffoldMessengerKey.currentState?.showSnackBar(
                           SnackBar(
                             content: const Row(
                               children: [
@@ -489,9 +497,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            duration: const Duration(
-                              seconds: 2,
-                            ), // Biến mất sau 2 giây
+                            duration: const Duration(seconds: 2),
                           ),
                         );
 
