@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
+import 'widgets/numeric_calculator_keyboard.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({Key? key}) : super(key: key);
@@ -360,6 +361,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     catNameController.dispose();
   }
 
+  void _showNumericKeyboard() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => NumericCalculatorKeyboard(
+        controller: _amountController,
+        onOk: () {
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Gọi danh mục thực tế được tải lên từ Database thông qua Provider
@@ -448,8 +463,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               // 2. Ô Nhập Số Tiền
               TextFormField(
                 controller: _amountController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                readOnly: true,
+                onTap: _showNumericKeyboard,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
