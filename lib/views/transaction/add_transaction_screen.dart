@@ -53,12 +53,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final catNameController = TextEditingController();
     String selectedType = 'expense';
     bool isSubmitting = false;
+    String? localError; // Thêm biến thông báo lỗi cục bộ
 
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Padding(
@@ -127,6 +128,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
                   TextField(
                     controller: catNameController,
+                    onChanged: (val) {
+                      if (localError != null) {
+                        setModalState(() => localError = null);
+                      }
+                    },
                     decoration: InputDecoration(
                       hintText: "Nhập tên danh mục...",
                       prefixIcon: const Icon(Icons.edit_outlined),
@@ -157,6 +163,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           onSelected: (_) {
                             setModalState(() {
                               selectedType = 'expense';
+                              localError = null;
                             });
                           },
                         ),
@@ -176,6 +183,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           onSelected: (_) {
                             setModalState(() {
                               selectedType = 'income';
+                              localError = null;
                             });
                           },
                         ),
@@ -205,9 +213,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         if (isSubmitting) return;
 
                         final name = catNameController.text.trim();
-                        if (name.isEmpty) return;
+                        if (name.isEmpty) {
+                          setModalState(() => localError = "Tên danh mục không được để trống");
+                          return;
+                        }
 
-                        setModalState(() => isSubmitting = true);
+                        // Kiểm tra trùng lặp (không phân biệt hoa thường)
+                        final isDuplicate = financeProvider.categories.any(
+                          (cat) =>
+                              cat.type == selectedType &&
+                              cat.name.trim().toLowerCase() ==
+                                  name.toLowerCase(),
+                        );
+
+                        if (isDuplicate) {
+                          setModalState(() => localError = "Danh mục này đã tồn tại!");
+                          return;
+                        }
+
+                        setModalState(() {
+                          isSubmitting = true;
+                          localError = null;
+                        });
                         bool success = false;
                         try {
                           await financeProvider.addCustomCategory(
@@ -251,6 +278,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       },
                     ),
                   ),
+
+                  if (localError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        localError!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
 
                   const SizedBox(height: 24),
 
