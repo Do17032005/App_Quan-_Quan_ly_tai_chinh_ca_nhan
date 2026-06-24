@@ -19,32 +19,49 @@ class FinanceProvider with ChangeNotifier {
       name: 'Ăn uống',
       type: 'expense',
       iconName: 'utensils',
+      colorValue: 0xFFFF9800, // Orange
     ),
-    CategoryModel(id: '2', name: 'Di chuyển', type: 'expense', iconName: 'car'),
+    CategoryModel(
+      id: '2',
+      name: 'Di chuyển',
+      type: 'expense',
+      iconName: 'car',
+      colorValue: 0xFF2196F3, // Blue
+    ),
     CategoryModel(
       id: '3',
       name: 'Mua sắm',
       type: 'expense',
       iconName: 'shopping-bag',
+      colorValue: 0xFFE91E63, // Pink
     ),
     CategoryModel(
       id: '4',
       name: 'Giải trí',
       type: 'expense',
       iconName: 'gamepad',
+      colorValue: 0xFF9C27B0, // Purple
     ),
     CategoryModel(
       id: '5',
       name: 'Tiền lương',
       type: 'income',
       iconName: 'money-bill',
+      colorValue: 0xFF4CAF50, // Green
     ),
-    CategoryModel(id: '6', name: 'Thưởng', type: 'income', iconName: 'gift'),
+    CategoryModel(
+      id: '6',
+      name: 'Thưởng',
+      type: 'income',
+      iconName: 'gift',
+      colorValue: 0xFFFFC107, // Amber
+    ),
     CategoryModel(
       id: '7',
       name: 'Tiền làm thêm',
       type: 'income',
       iconName: 'laptop-code',
+      colorValue: 0xFF009688, // Teal
     ),
   ];
 
@@ -130,16 +147,16 @@ class FinanceProvider with ChangeNotifier {
     }
 
     _categorySubscription?.cancel();
-    _categorySubscription = _categoryCollection.snapshots().listen((snapshot) {
-      _customCategories = snapshot.docs
-          .map((doc) {
-            return CategoryModel.fromMap(
-              doc.id,
-              doc.data() as Map<String, dynamic>,
-            );
-          })
-          .where((category) => category.userId == currentUser.uid)
-          .toList();
+    _categorySubscription = _categoryCollection
+        .where('user_id', isEqualTo: currentUser.uid)
+        .snapshots()
+        .listen((snapshot) {
+      _customCategories = snapshot.docs.map((doc) {
+        return CategoryModel.fromMap(
+          doc.id,
+          doc.data() as Map<String, dynamic>,
+        );
+      }).toList();
       _customCategories = _dedupeCustomCategories(_customCategories);
       notifyListeners();
     });
@@ -162,7 +179,12 @@ class FinanceProvider with ChangeNotifier {
   }
 
   // HÀM USER TỰ THÊM DANH MỤC MỚI
-  Future<void> addCustomCategory(String name, String type) async {
+  Future<void> addCustomCategory({
+    required String name,
+    required String type,
+    required String iconName,
+    required int colorValue,
+  }) async {
     try {
       final User? currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
@@ -170,13 +192,24 @@ class FinanceProvider with ChangeNotifier {
       final newCat = CategoryModel(
         name: name,
         type: type,
-        iconName: type == 'expense' ? 'shopping-bag' : 'money-bill',
+        iconName: iconName,
+        colorValue: colorValue,
         userId: currentUser.uid,
       );
 
       await _categoryCollection.add(newCat.toMap());
     } catch (e) {
       print("Lỗi thêm danh mục: $e");
+    }
+  }
+
+  // HÀM USER CẬP NHẬT DANH MỤC TỰ TẠO
+  Future<void> updateCustomCategory(CategoryModel category) async {
+    try {
+      if (category.id == null) return;
+      await _categoryCollection.doc(category.id).update(category.toMap());
+    } catch (e) {
+      print("Lỗi cập nhật danh mục: $e");
     }
   }
 

@@ -46,7 +46,11 @@ class _NumericCalculatorKeyboardState extends State<NumericCalculatorKeyboard> {
   }
 
   void _calculate() {
-    if (_expression.isEmpty) return;
+    if (_expression.isEmpty) {
+      _expression = '0';
+      widget.controller.text = _expression;
+      return;
+    }
     try {
       // Thay thế các ký tự hiển thị sang ký tự toán học
       String finalExpression = _expression.replaceAll('x', '*').replaceAll('÷', '/');
@@ -57,14 +61,16 @@ class _NumericCalculatorKeyboardState extends State<NumericCalculatorKeyboard> {
       double eval = exp.evaluate(EvaluationType.REAL, cm);
       
       // Chuyển kết quả thành chuỗi, bỏ phần thập phân nếu là số nguyên
-      if (eval == eval.toInt()) {
-        _expression = eval.toInt().toString();
+      if (eval.isInfinite || eval.isNaN) {
+        _expression = '0';
+      } else if (eval == eval.toInt()) {
+        _expression = eval.toInt().abs().toString();
       } else {
-        _expression = eval.toStringAsFixed(0); // Thường tiền tệ không để lẻ quá nhiều hoặc tùy định dạng
+        _expression = eval.abs().toStringAsFixed(0);
       }
       widget.controller.text = _expression;
     } catch (e) {
-      // Nếu lỗi (vô lý), không làm gì hoặc báo lỗi nhẹ
+      // Nếu lỗi (vô lý), reset về 0 hoặc giữ nguyên tùy logic
     }
   }
 
@@ -100,20 +106,41 @@ class _NumericCalculatorKeyboardState extends State<NumericCalculatorKeyboard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.only(top: 8, left: 8, right: 8, bottom: 20),
+      decoration: const BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
             color: Colors.black12,
             blurRadius: 10,
-            offset: const Offset(0, -2),
+            offset: Offset(0, -2),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Vùng hiển thị số đang nhập hoặc kết quả phép tính
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.shade100),
+            ),
+            child: Text(
+              _expression.isEmpty ? '0' : _expression,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade800,
+              ),
+            ),
+          ),
           Row(
             children: [
               _buildButton('7'),

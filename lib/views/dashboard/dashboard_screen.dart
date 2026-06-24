@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/category_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
+import '../../utils/icon_utils.dart';
 import '../transaction/add_transaction_screen.dart';
 import '../statistics/statistics_screen.dart';
 import 'widgets/balance_card.dart';
@@ -144,6 +145,7 @@ class DashboardHomeContent extends StatelessWidget {
                                 name: 'Khác',
                                 type: 'expense',
                                 iconName: 'help',
+                                colorValue: 0xFF9E9E9E,
                               ),
                             );
 
@@ -214,16 +216,10 @@ class DashboardHomeContent extends StatelessWidget {
                                 ),
                                 child: ListTile(
                                   leading: CircleAvatar(
-                                    backgroundColor: isIncome
-                                        ? Colors.green.withOpacity(0.1)
-                                        : Colors.red.withOpacity(0.1),
+                                    backgroundColor: Color(category.colorValue).withValues(alpha: 0.1),
                                     child: Icon(
-                                      isIncome
-                                          ? Icons.arrow_downward
-                                          : Icons.arrow_upward,
-                                      color: isIncome
-                                          ? Colors.green
-                                          : Colors.red,
+                                      IconUtils.getIconData(category.iconName),
+                                      color: Color(category.colorValue),
                                     ),
                                   ),
                                   title: Text(
