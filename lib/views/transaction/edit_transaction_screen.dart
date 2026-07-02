@@ -1,47 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
 import '../../utils/icon_utils.dart';
-import '../../main.dart';
-import '../category/category_management_screen.dart'; // Import màn hình quản lý danh mục
+import 'add_transaction_screen.dart';
 import 'widgets/numeric_calculator_keyboard.dart';
 
-class AddTransactionScreen extends StatefulWidget {
-  final TransactionModel? initialTransaction;
-  const AddTransactionScreen({Key? key, this.initialTransaction}) : super(key: key);
+class EditTransactionScreen extends StatefulWidget {
+  final TransactionModel transaction;
+  const EditTransactionScreen({Key? key, required this.transaction}) : super(key: key);
 
   @override
-  State<AddTransactionScreen> createState() => _AddTransactionScreenState();
+  State<EditTransactionScreen> createState() => _EditTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> {
+class _EditTransactionScreenState extends State<EditTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
 
   late String _transactionType;
   String? _selectedCategoryId;
-  String? _categoryError;
   late DateTime _selectedDate;
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialTransaction != null) {
-      _transactionType = widget.initialTransaction!.type;
-      _amountController.text = widget.initialTransaction!.amount.toInt().toString();
-      _noteController.text = widget.initialTransaction!.note;
-      _selectedCategoryId = widget.initialTransaction!.categoryId;
-      _selectedDate = DateTime.now(); // Copy thường dùng cho ngày hiện tại
-    } else {
-      _transactionType = 'expense';
-      _amountController.text = '0';
-      _selectedDate = DateTime.now();
-    }
+    _transactionType = widget.transaction.type;
+    _amountController.text = widget.transaction.amount.toInt().toString();
+    _noteController.text = widget.transaction.note;
+    _selectedCategoryId = widget.transaction.categoryId;
+    _selectedDate = widget.transaction.date;
     _amountController.addListener(_onAmountChanged);
   }
 
@@ -87,31 +78,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.grey),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTypeTab('Tiền chi', 'expense'),
-              _buildTypeTab('Tiền thu', 'income'),
-            ],
-          ),
+        title: Text(
+          _transactionType == 'expense' ? 'Sửa khoản chi' : 'Sửa khoản thu',
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit, color: Colors.lightBlueAccent),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CategoryManagementScreen(initialType: _transactionType),
-                ),
-              );
-            },
+            icon: const Icon(Icons.copy, color: Colors.blue),
+            onPressed: _copyTransaction,
+            tooltip: 'Sao chép',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: _confirmDelete,
+            tooltip: 'Xóa',
           ),
         ],
       ),
@@ -247,31 +228,36 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   crossAxisSpacing: 10,
                   childAspectRatio: 1.2,
                 ),
-                itemCount: filteredCategories.length + 1,
+                itemCount: filteredCategories.length,
                 itemBuilder: (context, index) {
-                  if (index == filteredCategories.length) {
-                    return _buildCategoryItem(
-                      icon: Icons.chevron_right,
-                      label: 'Chỉnh sửa',
-                      color: Colors.grey,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CategoryManagementScreen(initialType: _transactionType),
-                          ),
-                        );
-                      },
-                    );
-                  }
                   final cat = filteredCategories[index];
                   final isSelected = _selectedCategoryId == cat.id;
-                  return _buildCategoryItem(
-                    icon: IconUtils.getIconData(cat.iconName),
-                    label: cat.name,
-                    color: Color(cat.colorValue),
-                    isSelected: isSelected,
+                  return GestureDetector(
                     onTap: () => setState(() => _selectedCategoryId = cat.id),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: isSelected ? Color(cat.colorValue) : Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            IconUtils.getIconData(cat.iconName),
+                            color: Color(cat.colorValue),
+                            size: 30,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            cat.name,
+                            style: TextStyle(fontSize: 12, color: isSelected ? Color(cat.colorValue) : Colors.black),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 },
               ),
@@ -280,75 +266,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _saveTransaction,
+                  onPressed: _updateTransaction,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.lightBlueAccent,
+                    backgroundColor: Colors.blue,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                   ),
-                  child: Text(
-                    _transactionType == 'expense' ? 'Nhập khoản chi' : 'Nhập khoản thu',
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
+                  child: const Text(
+                    'Lưu thay đổi',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTypeTab(String label, String type) {
-    bool isSelected = _transactionType == type;
-    return GestureDetector(
-      onTap: () => setState(() {
-        _transactionType = type;
-        _selectedCategoryId = null;
-      }),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.lightBlueAccent : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryItem({
-    required IconData icon,
-    required String label,
-    required Color color,
-    bool isSelected = false,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: isSelected ? color : Colors.grey.shade200),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 30),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(fontSize: 12, color: isSelected ? color : Colors.black),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
         ),
       ),
     );
@@ -378,7 +308,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
   }
 
-  Future<void> _saveTransaction() async {
+  Future<void> _updateTransaction() async {
     if (_amountController.text.isEmpty || _amountController.text == '0') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập số tiền')),
@@ -393,20 +323,68 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
 
     final financeProvider = Provider.of<FinanceProvider>(context, listen: false);
-    
-    // Đảm bảo số tiền luôn dương trong DB, logic âm/dương sẽ do field 'type' quyết định
     double amount = double.tryParse(_amountController.text) ?? 0;
-    if (amount < 0) amount = amount.abs();
-
-    final newTx = TransactionModel(
-      amount: amount,
+    
+    final updatedTx = TransactionModel(
+      id: widget.transaction.id,
+      documentId: widget.transaction.documentId,
+      amount: amount.abs(),
       type: _transactionType,
       categoryId: _selectedCategoryId!,
       date: _selectedDate,
       note: _noteController.text.trim(),
     );
 
-    await financeProvider.addTransaction(newTx);
+    if (widget.transaction.documentId != null) {
+      await financeProvider.updateTransaction(widget.transaction.documentId!, updatedTx);
+    }
+    
     if (mounted) Navigator.pop(context);
+  }
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận xóa'),
+        content: const Text('Bạn có chắc chắn muốn xóa giao dịch này không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final financeProvider = Provider.of<FinanceProvider>(context, listen: false);
+              if (widget.transaction.documentId != null) {
+                await financeProvider.deleteTransaction(widget.transaction.documentId!);
+              }
+              if (mounted) {
+                Navigator.pop(context); // Đóng dialog
+                Navigator.pop(context); // Quay lại màn hình trước đó
+              }
+            },
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _copyTransaction() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddTransactionScreen(
+          initialTransaction: TransactionModel(
+            amount: double.tryParse(_amountController.text) ?? 0,
+            type: _transactionType,
+            categoryId: _selectedCategoryId!,
+            date: DateTime.now(),
+            note: _noteController.text.trim(),
+          ),
+        ),
+      ),
+    );
   }
 }

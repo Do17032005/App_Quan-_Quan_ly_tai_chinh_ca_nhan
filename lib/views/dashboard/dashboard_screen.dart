@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../utils/icon_utils.dart';
 import '../transaction/add_transaction_screen.dart';
+import '../transaction/edit_transaction_screen.dart';
 import '../statistics/statistics_screen.dart';
 import 'widgets/balance_card.dart';
 
@@ -208,84 +209,94 @@ class DashboardHomeContent extends StatelessWidget {
                                   );
                                 }
                               },
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(vertical: 6),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditTransactionScreen(transaction: tx),
                                     ),
-                                  ],
-                                ),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: Color(category.colorValue).withOpacity(0.1),
-                                      child: Icon(
-                                        IconUtils.getIconData(category.iconName),
-                                        color: Color(category.colorValue),
+                                  );
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 6),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
                                       ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    // Phần thân: Tên danh mục và Ghi chú
-                                    Expanded(
-                                      flex: 3,
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            category.name,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          if (tx.note.isNotEmpty)
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor: Color(category.colorValue).withOpacity(0.1),
+                                        child: Icon(
+                                          IconUtils.getIconData(category.iconName),
+                                          color: Color(category.colorValue),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      // Phần thân: Tên danh mục và Ghi chú
+                                      Expanded(
+                                        flex: 3,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
                                             Text(
-                                              tx.note,
-                                              style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: 13,
+                                              category.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
                                               ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                        ],
+                                            if (tx.note.isNotEmpty)
+                                              Text(
+                                                tx.note,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: 13,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    // Phần đuôi: Số tiền và Ngày tháng
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            '${isIncome ? '+' : '-'}${currencyFormat.format(tx.amount)}',
-                                            style: TextStyle(
-                                              color: isIncome ? Colors.green : Colors.red,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
+                                      // Phần đuôi: Số tiền và Ngày tháng
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              '${isIncome ? '+' : '-'}${currencyFormat.format(tx.amount)}',
+                                              style: TextStyle(
+                                                color: isIncome ? Colors.green : Colors.red,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
                                             ),
-                                          ),
-                                          Text(
-                                            DateFormat('dd/MM HH:mm').format(tx.date),
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.grey,
+                                            Text(
+                                              DateFormat('dd/MM HH:mm').format(tx.date),
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             );

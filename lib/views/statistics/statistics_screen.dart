@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../providers/finance_provider.dart';
 import '../../data/models/category_model.dart';
 import '../../utils/icon_utils.dart';
+import '../transaction/edit_transaction_screen.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({Key? key}) : super(key: key);
@@ -367,66 +368,76 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                 );
                             final isIncome = tx.type == 'income';
 
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: Color(category.colorValue).withOpacity(0.1),
-                                    radius: 18,
-                                    child: Icon(
-                                      IconUtils.getIconData(category.iconName),
-                                      color: Color(category.colorValue),
-                                      size: 18,
-                                    ),
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditTransactionScreen(transaction: tx),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    flex: 3,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          category.name,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                        ),
-                                        if (tx.note.isNotEmpty)
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: Color(category.colorValue).withOpacity(0.1),
+                                      radius: 18,
+                                      child: Icon(
+                                        IconUtils.getIconData(category.iconName),
+                                        color: Color(category.colorValue),
+                                        size: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      flex: 3,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
                                           Text(
-                                            tx.note,
-                                            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                            category.name,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                           ),
-                                      ],
+                                          if (tx.note.isNotEmpty)
+                                            Text(
+                                              tx.note,
+                                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  Expanded(
-                                    flex: 2,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          '${isIncome ? '+' : '-'}${NumberFormat('#,###').format(tx.amount)}đ',
-                                          style: TextStyle(
-                                            color: isIncome ? Colors.green : Colors.red,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
+                                    Expanded(
+                                      flex: 2,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            '${isIncome ? '+' : '-'}${NumberFormat('#,###').format(tx.amount)}đ',
+                                            style: TextStyle(
+                                              color: isIncome ? Colors.green : Colors.red,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
                                           ),
-                                        ),
-                                        Text(
-                                          DateFormat('dd/MM').format(tx.date),
-                                          style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                        ),
-                                      ],
+                                          Text(
+                                            DateFormat('dd/MM').format(tx.date),
+                                            style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             );
                           },
