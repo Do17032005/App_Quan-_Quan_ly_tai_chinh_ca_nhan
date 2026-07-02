@@ -62,6 +62,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final financeProvider = Provider.of<FinanceProvider>(context);
 
     // 1. Lọc giao dịch theo thời gian được chọn và các bộ lọc bổ sung
+    final Map<String, CategoryModel> categoryMap = {
+      for (var cat in financeProvider.categories) cat.id ?? '': cat
+    };
+
     final filteredTransactions = financeProvider.transactions.where((tx) {
       // Lọc theo thời gian
       bool timeMatch;
@@ -75,8 +79,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
       // Lọc theo danh mục
       if (_selectedCategory != 'Tất cả' &&
-          _getCategoryName(financeProvider, tx.categoryId) !=
-              _selectedCategory) {
+          (categoryMap[tx.categoryId]?.name ?? 'Khác') != _selectedCategory) {
         return false;
       }
 
@@ -224,7 +227,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             ],
           ),
 
-          // Biểu đồ Donut và Danh sách
+          // Biểu đồ Donut và Danh sách (Tối ưu hiệu năng với CustomScrollView)
           Expanded(
             child: chartDataTransactions.isEmpty
                 ? Center(
@@ -238,101 +241,199 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                       ],
                     ),
                   )
-                : ListView(
-                    children: [
-                      const SizedBox(height: 20),
-                      // Biểu đồ tròn
-                      SizedBox(
-                        height: 220,
-                        child: Stack(
-                          alignment: Alignment.center,
+                : CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            PieChart(
-                              PieChartData(
-                                sectionsSpace: 0,
-                                centerSpaceRadius: 70,
-                                startDegreeOffset: -90,
-                                sections: sortedEntries.map((entry) {
-                                  return PieChartSectionData(
-                                    color: _getCategoryColor(financeProvider, entry.key),
-                                    value: entry.value,
-                                    title: '',
-                                    radius: 50,
-                                  );
-                                }).toList(),
+                            const SizedBox(height: 20),
+                            // Biểu đồ tròn
+                            SizedBox(
+                              height: 220,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  PieChart(
+                                    PieChartData(
+                                      sectionsSpace: 0,
+                                      centerSpaceRadius: 70,
+                                      startDegreeOffset: -90,
+                                      sections: sortedEntries.map((entry) {
+                                        final categoryId = entry.key;
+                                        final cat = categoryMap[categoryId] ??
+                                            CategoryModel(
+                                              name: 'Khác',
+                                              type: 'expense',
+                                              iconName: 'category',
+                                              colorValue: 0xFF9E9E9E,
+                                            );
+                                        return PieChartSectionData(
+                                          color: Color(cat.colorValue),
+                                          value: entry.value,
+                                          title: '',
+                                          radius: 50,
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                  // Text ở giữa biểu đồ
+                                  if (sortedEntries.isNotEmpty)
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          categoryMap[sortedEntries.first.key]?.name ?? 'Khác',
+                                          style: TextStyle(
+                                            color: Color(categoryMap[sortedEntries.first.key]?.colorValue ?? 0xFF9E9E9E),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
                               ),
                             ),
-                            // Text ở giữa biểu đồ
-                            if (sortedEntries.isNotEmpty)
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
+                            const SizedBox(height: 20),
+                            // 1. Danh sách phân tích theo phần trăm (Category Breakdown)
+                            ...sortedEntries.map((entry) {
+                              final categoryId = entry.key;
+                              final amount = entry.value;
+                              final percentage = totalForChart > 0 ? (amount / totalForChart * 100) : 0;
+                              final category = categoryMap[categoryId] ??
+                                  CategoryModel(
+                                    name: 'Khác',
+                                    type: _chartType,
+                                    iconName: 'category',
+                                    colorValue: 0xFF9E9E9E,
+                                  );
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 12,
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        color: Color(category.colorValue),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(category.name, style: const TextStyle(fontSize: 14)),
+                                    ),
+                                    Text(
+                                      '${percentage.toStringAsFixed(1)}%',
+                                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      '${NumberFormat('#,###').format(amount)}đ',
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+
+                            const Divider(height: 40, thickness: 8, color: Color(0xFFF5F5F5)),
+
+                            // 2. Tiêu đề phần chi tiết giao dịch
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: Text(
+                                'Giao dịch chi tiết',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // 3. Danh sách giao dịch chi tiết (Sử dụng SliverList để tối ưu hiệu năng)
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final tx = filteredTransactions[index];
+                            final category = categoryMap[tx.categoryId] ??
+                                CategoryModel(
+                                  name: 'Khác',
+                                  type: tx.type,
+                                  iconName: 'category',
+                                  colorValue: 0xFF9E9E9E,
+                                );
+                            final isIncome = tx.type == 'income';
+
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    _getCategoryName(financeProvider, sortedEntries.first.key),
-                                    style: TextStyle(
-                                      color: _getCategoryColor(financeProvider, sortedEntries.first.key),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                  CircleAvatar(
+                                    backgroundColor: Color(category.colorValue).withOpacity(0.1),
+                                    radius: 18,
+                                    child: Icon(
+                                      IconUtils.getIconData(category.iconName),
+                                      color: Color(category.colorValue),
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    flex: 3,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          category.name,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                        ),
+                                        if (tx.note.isNotEmpty)
+                                          Text(
+                                            tx.note,
+                                            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          '${isIncome ? '+' : '-'}${NumberFormat('#,###').format(tx.amount)}đ',
+                                          style: TextStyle(
+                                            color: isIncome ? Colors.green : Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        Text(
+                                          DateFormat('dd/MM').format(tx.date),
+                                          style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                          ],
+                            );
+                          },
+                          childCount: filteredTransactions.length,
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      // Danh sách phân tích
-                      ...sortedEntries.map((entry) {
-                        final categoryId = entry.key;
-                        final amount = entry.value;
-                        final percentage = totalForChart > 0 ? (amount / totalForChart * 100) : 0;
-                        final category = financeProvider.categories.firstWhere(
-                          (cat) => cat.id == categoryId,
-                          orElse: () => CategoryModel(
-                            name: 'Khác',
-                            type: _chartType,
-                            iconName: 'category',
-                            colorValue: 0xFF9E9E9E,
-                          ),
-                        );
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: _getCategoryColor(financeProvider, categoryId).withOpacity(0.1),
-                                child: Icon(IconUtils.getIconData(category.iconName), color: _getCategoryColor(financeProvider, categoryId), size: 20),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  category.name,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                                ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${NumberFormat('#,###').format(amount)}đ',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                  ),
-                                  Text(
-                                    '${percentage.toStringAsFixed(1)} %',
-                                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                      const SliverToBoxAdapter(child: SizedBox(height: 80)),
                     ],
                   ),
           ),

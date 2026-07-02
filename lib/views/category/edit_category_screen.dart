@@ -42,6 +42,12 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -55,7 +61,7 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
+            child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,56 +85,97 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                   const SizedBox(height: 16),
                   const Text('Biểu tượng', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                    ),
-                    itemCount: _icons.length,
-                    itemBuilder: (context, index) {
-                      final icon = _icons[index];
-                      final isSelected = _selectedIcon == icon;
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedIcon = icon),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: isSelected ? Color(_selectedColor) : Colors.grey.shade200),
-                            borderRadius: BorderRadius.circular(8),
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Scrollbar(
+                        thumbVisibility: true,
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(12),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _icons.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
                           ),
-                          child: Icon(IconUtils.getIconData(icon), color: isSelected ? Color(_selectedColor) : Colors.grey),
+                          itemBuilder: (context, index) {
+                            final icon = _icons[index];
+                            final isSelected = _selectedIcon == icon;
+                            return GestureDetector(
+                              onTap: () => setState(() => _selectedIcon = icon),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Color(_selectedColor).withOpacity(0.2) : Colors.white,
+                                  border: Border.all(
+                                    color: isSelected ? Color(_selectedColor) : Colors.grey.shade300,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  IconUtils.getIconData(icon),
+                                  color: isSelected ? Color(_selectedColor) : Colors.grey,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   const Text('Màu sắc', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 6,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                    ),
-                    itemCount: _colors.length,
-                    itemBuilder: (context, index) {
-                      final color = _colors[index];
-                      final isSelected = _selectedColor == color;
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedColor = color),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Color(color),
-                            borderRadius: BorderRadius.circular(4),
-                            border: isSelected ? Border.all(color: Colors.black, width: 2) : null,
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Scrollbar(
+                        thumbVisibility: true,
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(12),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _colors.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 6,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
                           ),
+                          itemBuilder: (context, index) {
+                            final color = _colors[index];
+                            final isSelected = _selectedColor == color;
+                            return GestureDetector(
+                              onTap: () => setState(() => _selectedColor = color),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Color(color),
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: isSelected ? [
+                                    BoxShadow(
+                                      color: Color(color).withOpacity(0.4),
+                                      blurRadius: 4,
+                                      spreadRadius: 2,
+                                    )
+                                  ] : null,
+                                  border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
+                                ),
+                                child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ],
               ),

@@ -31,7 +31,7 @@ class CategoryModel {
       name: map['name'] ?? '',
       type: map['type'] ?? 'expense',
       iconName: map['icon_name'] ?? 'category',
-      colorValue: map['color_value'] ?? 0xFF9E9E9E, // Mặc định là màu xám nếu không có
+      colorValue: map['color_value'] ?? 0xFF9E9E9E,
       userId: map['user_id'],
     );
   }

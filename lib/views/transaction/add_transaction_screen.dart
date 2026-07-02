@@ -172,14 +172,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               // Ghi chú
               Row(
                 children: [
+                  const Icon(Icons.notes, color: Colors.grey, size: 20),
+                  const SizedBox(width: 12),
                   const Text('Ghi chú', style: TextStyle(fontSize: 16)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: _noteController,
-                      decoration: const InputDecoration(
-                        hintText: 'Chưa nhập vào',
-                        hintStyle: TextStyle(color: Colors.grey),
+                      decoration: InputDecoration(
+                        hintText: _transactionType == 'expense' 
+                          ? 'Nhập ghi chú cho khoản chi này...' 
+                          : 'Nhập ghi chú cho khoản thu này...',
+                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
                         border: InputBorder.none,
                       ),
                     ),
