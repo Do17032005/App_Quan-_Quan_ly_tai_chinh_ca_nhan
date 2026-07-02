@@ -19,6 +19,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   DateTime _selectedDate = DateTime.now();
   String _chartType = 'expense'; // 'expense' hoặc 'income'
 
+  // Tìm kiếm
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   // Bộ lọc chi tiết
   String _selectedCategory = 'Tất cả';
   double? _minAmount;
@@ -67,8 +72,18 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       for (var cat in financeProvider.categories) cat.id ?? '': cat
     };
 
+    // 1. Lọc giao dịch
     final filteredTransactions = financeProvider.transactions.where((tx) {
-      // Lọc theo thời gian
+      // Nếu đang tìm kiếm, ưu tiên lọc theo từ khóa trên toàn bộ dữ liệu (hoặc có thể kết hợp lọc thời gian nếu muốn)
+      if (_isSearching && _searchQuery.isNotEmpty) {
+        final noteMatch = tx.note.toLowerCase().contains(_searchQuery.toLowerCase());
+        final catMatch = (categoryMap[tx.categoryId]?.name ?? 'Khác')
+            .toLowerCase()
+            .contains(_searchQuery.toLowerCase());
+        return noteMatch || catMatch;
+      }
+
+      // Lọc theo thời gian (khi không tìm kiếm hoặc tìm kiếm trống)
       bool timeMatch;
       if (_isMonthly) {
         timeMatch = tx.date.year == _selectedDate.year &&
@@ -124,32 +139,70 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTopTab('Hàng Tháng', _isMonthly, () => setState(() => _isMonthly = true)),
-            _buildTopTab('Hàng Năm', !_isMonthly, () => setState(() => _isMonthly = false)),
-          ],
-        ),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Tìm kiếm ghi chú, danh mục...',
+                  border: InputBorder.none,
+                ),
+                style: const TextStyle(fontSize: 16),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildTopTab('Hàng Tháng', _isMonthly, () => setState(() => _isMonthly = true)),
+                  _buildTopTab('Hàng Năm', !_isMonthly, () => setState(() => _isMonthly = false)),
+                ],
+              ),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.camera_alt_outlined, color: Colors.blue),
-          onPressed: () {},
-        ),
+        leading: _isSearching
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.blue),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchQuery = '';
+                    _searchController.clear();
+                  });
+                },
+              )
+            : IconButton(
+                icon: const Icon(Icons.camera_alt_outlined, color: Colors.blue),
+                onPressed: () {},
+              ),
         actions: [
+          if (!_isSearching)
+            IconButton(
+              icon: const Icon(Icons.filter_list, color: Colors.blue),
+              onPressed: () => _showFilterDialog(financeProvider),
+            ),
           IconButton(
-            icon: const Icon(Icons.filter_list, color: Colors.blue),
-            onPressed: () => _showFilterDialog(financeProvider),
-          ),
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.blue),
-            onPressed: () {},
+            icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.blue),
+            onPressed: () {
+              setState(() {
+                if (_isSearching) {
+                  _searchQuery = '';
+                  _searchController.clear();
+                } else {
+                  _isSearching = true;
+                }
+              });
+            },
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Bộ chọn thời gian (Tháng/Năm)
+      body: _isSearching && _searchQuery.isNotEmpty
+          ? _buildSearchResults(filteredTransactions, categoryMap)
+          : Column(
+              children: [
+                // Bộ chọn thời gian (Tháng/Năm)
           Container(
             color: Colors.blue.shade50.withOpacity(0.3),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -449,6 +502,124 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResults(List<dynamic> transactions, Map<String, CategoryModel> categoryMap) {
+    if (transactions.isEmpty) {
+      return const Center(child: Text('Không tìm thấy giao dịch nào'));
+    }
+
+    // Nhóm giao dịch theo ngày
+    Map<String, List<dynamic>> grouped = {};
+    for (var tx in transactions) {
+      String dateStr = DateFormat('dd/MM/yyyy').format(tx.date);
+      if (grouped[dateStr] == null) grouped[dateStr] = [];
+      grouped[dateStr]!.add(tx);
+    }
+
+    var sortedDates = grouped.keys.toList()
+      ..sort((a, b) => DateFormat('dd/MM/yyyy').parse(b).compareTo(DateFormat('dd/MM/yyyy').parse(a)));
+
+    return ListView.builder(
+      itemCount: sortedDates.length,
+      itemBuilder: (context, index) {
+        String date = sortedDates[index];
+        List<dynamic> txs = grouped[date]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Colors.grey.shade100,
+              child: Text(
+                date,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            ...txs.map((tx) => _buildTransactionItem(tx, categoryMap)).toList(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTransactionItem(dynamic tx, Map<String, CategoryModel> categoryMap) {
+    final category = categoryMap[tx.categoryId] ??
+        CategoryModel(
+          name: 'Khác',
+          type: tx.type,
+          iconName: 'category',
+          colorValue: 0xFF9E9E9E,
+        );
+    final isIncome = tx.type == 'income';
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EditTransactionScreen(transaction: tx),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: Color(category.colorValue).withOpacity(0.1),
+              radius: 18,
+              child: Icon(
+                IconUtils.getIconData(category.iconName),
+                color: Color(category.colorValue),
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  if (tx.note.isNotEmpty)
+                    Text(
+                      tx.note,
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                '${isIncome ? '+' : '-'}${NumberFormat('#,###').format(tx.amount)}đ',
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  color: isIncome ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
