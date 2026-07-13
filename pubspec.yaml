@@ -58,6 +58,8 @@ dependencies:
   # Thêm thư viện quản lý đăng nhập bằng Firebase Authentication:
   firebase_auth: ^5.1.1
 
+  table_calendar: ^3.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -5,6 +5,7 @@ import '../../data/models/category_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../utils/icon_utils.dart';
+import '../calendar/calendar_screen.dart';
 import '../transaction/add_transaction_screen.dart';
 import '../transaction/edit_transaction_screen.dart';
 import '../statistics/statistics_screen.dart';
@@ -22,7 +23,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screens = [const DashboardHomeContent(), const StatisticsScreen()];
+    final screens = [
+      const DashboardHomeContent(),
+      const StatisticsScreen(),
+      const CalendarScreen(),
+    ];
 
     return Scaffold(
       body: screens[_currentIndex],
@@ -43,8 +48,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: const Icon(Icons.add, size: 28),
       ),
 
-      // Đặt nút nổi nằm chính giữa, lồng nhẹ vào thanh điều hướng bên dưới
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      // Đặt nút nổi ở giữa nhưng nhấc lên khỏi thanh điều hướng để tránh sát tab Thống kê
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -56,13 +61,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         selectedItemColor: Colors.blue.shade700,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Trang chủ'
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
           BottomNavigationBarItem(
             icon: Icon(Icons.pie_chart),
             label: 'Thống kê',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_month),
+            label: 'Lịch',
           ),
         ],
       ),
@@ -214,12 +220,17 @@ class DashboardHomeContent extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => EditTransactionScreen(transaction: tx),
+                                      builder: (context) =>
+                                          EditTransactionScreen(
+                                            transaction: tx,
+                                          ),
                                     ),
                                   );
                                 },
                                 child: Container(
-                                  margin: const EdgeInsets.symmetric(vertical: 6),
+                                  margin: const EdgeInsets.symmetric(
+                                    vertical: 6,
+                                  ),
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
@@ -235,9 +246,13 @@ class DashboardHomeContent extends StatelessWidget {
                                   child: Row(
                                     children: [
                                       CircleAvatar(
-                                        backgroundColor: Color(category.colorValue).withOpacity(0.1),
+                                        backgroundColor: Color(
+                                          category.colorValue,
+                                        ).withOpacity(0.1),
                                         child: Icon(
-                                          IconUtils.getIconData(category.iconName),
+                                          IconUtils.getIconData(
+                                            category.iconName,
+                                          ),
                                           color: Color(category.colorValue),
                                         ),
                                       ),
@@ -246,8 +261,10 @@ class DashboardHomeContent extends StatelessWidget {
                                       Expanded(
                                         flex: 3,
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             Text(
                                               category.name,
@@ -274,19 +291,25 @@ class DashboardHomeContent extends StatelessWidget {
                                       Expanded(
                                         flex: 2,
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.end,
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             Text(
                                               '${isIncome ? '+' : '-'}${currencyFormat.format(tx.amount)}',
                                               style: TextStyle(
-                                                color: isIncome ? Colors.green : Colors.red,
+                                                color: isIncome
+                                                    ? Colors.green
+                                                    : Colors.red,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 16,
                                               ),
                                             ),
                                             Text(
-                                              DateFormat('dd/MM HH:mm').format(tx.date),
+                                              DateFormat(
+                                                'dd/MM HH:mm',
+                                              ).format(tx.date),
                                               style: const TextStyle(
                                                 fontSize: 11,
                                                 color: Colors.grey,

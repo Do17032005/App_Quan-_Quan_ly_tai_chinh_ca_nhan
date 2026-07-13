@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart'; // Import AuthProvider
@@ -7,12 +8,13 @@ import 'providers/finance_provider.dart';
 import 'views/dashboard/dashboard_screen.dart';
 import 'views/auth/login_screen.dart'; // File giao diện chúng ta sẽ tạo ở bước sau
 
-// Key toàn cục để quản lý thông báo (SnackBar) mà không bị lỗi context
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await initializeDateFormatting('vi_VN', null);
 
   runApp(
     MultiProvider(
