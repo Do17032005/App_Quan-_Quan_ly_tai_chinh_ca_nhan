@@ -70,4 +70,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get language => 'Ngôn ngữ';
+
+  @override
+  String get calendar => 'Lịch';
+
+  @override
+  String get total => 'Tổng cộng';
 }

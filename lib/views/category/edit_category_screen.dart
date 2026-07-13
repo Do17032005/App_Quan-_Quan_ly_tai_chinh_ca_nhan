@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../data/models/category_model.dart';
 import '../../providers/finance_provider.dart';
 import '../../utils/icon_utils.dart';
@@ -8,7 +9,7 @@ class EditCategoryScreen extends StatefulWidget {
   final CategoryModel? category;
   final String initialType;
 
-  const EditCategoryScreen({Key? key, this.category, required this.initialType}) : super(key: key);
+  const EditCategoryScreen({super.key, this.category, required this.initialType});
 
   @override
   State<EditCategoryScreen> createState() => _EditCategoryScreenState();
@@ -118,9 +119,11 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                                   ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Icon(
+                                alignment: Alignment.center,
+                                child: FaIcon(
                                   IconUtils.getIconData(icon),
                                   color: isSelected ? Color(_selectedColor) : Colors.grey,
+                                  size: 20,
                                 ),
                               ),
                             );
@@ -189,9 +192,17 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
               child: ElevatedButton(
                 onPressed: () async {
                   final name = _nameController.text.trim();
+                  final messenger = ScaffoldMessenger.of(context);
+                  final navigator = Navigator.of(context);
+                  
                   if (name.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Vui lòng nhập tên danh mục')),
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: const Text('Vui lòng nhập tên danh mục'),
+                        backgroundColor: Colors.orangeAccent,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     );
                     return;
                   }
@@ -206,8 +217,13 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                   ).toList();
 
                   if (existingCategory.isNotEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tên danh mục này đã tồn tại. Vui lòng chọn tên khác')),
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: const Text('Tên danh mục này đã tồn tại'),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     );
                     return;
                   }
@@ -219,6 +235,20 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                       iconName: _selectedIcon,
                       colorValue: _selectedColor,
                     );
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.check_circle_outline, color: Colors.white),
+                            const SizedBox(width: 12),
+                            Text('Đã thêm danh mục "$name"'),
+                          ],
+                        ),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    );
                   } else {
                     final updated = CategoryModel(
                       id: widget.category!.id,
@@ -229,9 +259,23 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                       userId: widget.category!.userId,
                     );
                     await financeProvider.updateCustomCategory(updated);
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.edit_note, color: Colors.white),
+                            const SizedBox(width: 12),
+                            Text('Đã cập nhật danh mục "$name"'),
+                          ],
+                        ),
+                        backgroundColor: Colors.blueAccent,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    );
                   }
                   
-                  if (mounted) Navigator.pop(context);
+                  navigator.pop();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.lightBlueAccent,

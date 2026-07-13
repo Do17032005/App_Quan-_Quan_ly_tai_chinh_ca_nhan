@@ -223,6 +223,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Ngôn ngữ'**
   String get language;
+
+  /// No description provided for @calendar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch'**
+  String get calendar;
+
+  /// No description provided for @total.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổng cộng'**
+  String get total;
 }
 
 class _AppLocalizationsDelegate

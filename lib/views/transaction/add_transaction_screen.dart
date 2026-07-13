@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
 import '../../utils/icon_utils.dart';
-import '../../main.dart';
 import '../../providers/settings_provider.dart';
 import '../category/category_management_screen.dart'; // Import màn hình quản lý danh mục
 import 'widgets/numeric_calculator_keyboard.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? initialTransaction;
-  const AddTransactionScreen({Key? key, this.initialTransaction}) : super(key: key);
+  const AddTransactionScreen({super.key, this.initialTransaction});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -26,7 +25,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   late String _transactionType;
   String? _selectedCategoryId;
-  String? _categoryError;
   late DateTime _selectedDate;
 
   @override
@@ -260,7 +258,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 itemBuilder: (context, index) {
                   if (index == filteredCategories.length) {
                     return _buildCategoryItem(
-                      icon: Icons.chevron_right,
+                      icon: FontAwesomeIcons.chevronRight,
                       label: 'Chỉnh sửa',
                       color: Colors.grey,
                       onTap: () {
@@ -332,7 +330,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Widget _buildCategoryItem({
-    required IconData icon,
+    required dynamic icon,
     required String label,
     required Color color,
     bool isSelected = false,
@@ -342,17 +340,24 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
           border: Border.all(color: isSelected ? color : Colors.grey.shade200),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 30),
+            icon is FaIconData 
+              ? FaIcon(icon, color: color, size: 24)
+              : (icon is IconData ? Icon(icon, color: color, size: 24) : const SizedBox()),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: isSelected ? color : Colors.black),
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected ? color : Colors.black,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

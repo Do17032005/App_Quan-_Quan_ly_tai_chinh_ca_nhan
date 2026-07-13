@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -66,9 +67,52 @@ class FinanceProvider with ChangeNotifier {
   ];
 
   List<TransactionModel> _transactions = [];
+  List<TransactionModel> _statsTransactions = []; // Riêng cho Thống kê (có thể load toàn bộ)
+  Map<String, List<TransactionModel>> _groupedTransactions = {};
   List<CategoryModel> _customCategories = [];
+  double _totalIncome = 0;
+  double _totalExpense = 0;
   StreamSubscription<QuerySnapshot>? _transactionSubscription;
   StreamSubscription<QuerySnapshot>? _categorySubscription;
+
+  // Pagination states
+  DocumentSnapshot? _lastDocument;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  final int _pageSize = 20;
+
+  bool get hasMore => _hasMore;
+  bool get isLoadingMore => _isLoadingMore;
+
+  void _updateGroupedTransactions() {
+    _groupedTransactions = {};
+    // Cập nhật grouping cho toàn bộ danh sách hiện có
+    for (var tx in _transactions) {
+      final key = "${tx.date.year}-${tx.date.month}-${tx.date.day}";
+      if (_groupedTransactions[key] == null) {
+        _groupedTransactions[key] = [];
+      }
+      _groupedTransactions[key]!.add(tx);
+    }
+  }
+
+  // Tính toán lại tổng thu chi (có thể tối ưu bằng cách tính khi load/add/delete)
+  void _calculateTotals() {
+    _totalIncome = 0;
+    _totalExpense = 0;
+    for (var tx in _transactions) {
+      if (tx.type == 'income') {
+        _totalIncome += tx.amount;
+      } else {
+        _totalExpense += tx.amount;
+      }
+    }
+  }
+
+  List<TransactionModel> getTransactionsByDay(DateTime date) {
+    final key = "${date.year}-${date.month}-${date.day}";
+    return _groupedTransactions[key] ?? [];
+  }
 
   List<CategoryModel> _dedupeCustomCategories(List<CategoryModel> categories) {
     final seen = <String>{};
@@ -82,42 +126,93 @@ class FinanceProvider with ChangeNotifier {
   }
 
   List<TransactionModel> get transactions => _transactions;
+  List<TransactionModel> get statsTransactions => _statsTransactions.isNotEmpty ? _statsTransactions : _transactions;
+
+  // Tải TOÀN BỘ giao dịch cho Thống kê (Dùng khi cần chính xác tuyệt đối các biểu đồ)
+  Future<void> fetchAllTransactionsForStats() async {
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      final snapshot = await _transactionCollection
+          .where('user_id', isEqualTo: currentUser.uid)
+          .orderBy('date', descending: true)
+          .get();
+
+      _statsTransactions = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return TransactionModel(
+          id: doc.id.hashCode,
+          documentId: doc.id,
+          amount: (data['amount'] as num).toDouble(),
+          type: data['type'],
+          categoryId: (data['category_id'] ?? '').toString(),
+          date: DateTime.parse(data['date']),
+          note: data['note'] ?? '',
+        );
+      }).toList();
+      notifyListeners();
+    } catch (e) {
+      developer.log("Lỗi khi tải toàn bộ giao dịch", error: e);
+    }
+  }
+
+  // TỐI ƯU: Lấy giao dịch theo tháng/năm
+  List<TransactionModel> getTransactionsByMonth(DateTime date) {
+    final source = statsTransactions;
+    return source.where((tx) =>
+      tx.date.year == date.year && tx.date.month == date.month
+    ).toList();
+  }
+
+  // TỐI ƯU: Lấy giao dịch theo năm
+  List<TransactionModel> getTransactionsByYear(int year) {
+    final source = statsTransactions;
+    return source.where((tx) => tx.date.year == year).toList();
+  }
+
   List<CategoryModel> get categories => [
     ..._defaultCategories,
     ..._customCategories,
   ];
 
-  double get totalIncome => _transactions
-      .where((tx) => tx.type == 'income')
-      .fold(0.0, (sum, item) => sum + item.amount);
+  double get totalIncome => _totalIncome;
 
-  double get totalExpense => _transactions
-      .where((tx) => tx.type == 'expense')
-      .fold(0.0, (sum, item) => sum + item.amount);
+  double get totalExpense => _totalExpense;
 
-  double get currentBalance => totalIncome - totalExpense;
+  double get currentBalance => _totalIncome - _totalExpense;
 
-  // LẮNG NGHE DỮ LIỆU REALTIME THEO TỪNG TÀI KHOẢN (ĐÃ PHÂN QUYỀN)
+  // LẮNG NGHE DỮ LIỆU REALTIME THEO TỪNG TÀI KHOẢN (Với Pagination)
   void listenToTransactions() {
-    // 1. Lấy thông tin người dùng hiện tại đang đăng nhập
     final User? currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
       _transactionSubscription?.cancel();
       _transactionSubscription = null;
-      // Nếu chưa đăng nhập hoặc đã đăng xuất -> Xóa sạch danh sách hiển thị trên màn hình
       _transactions = [];
+      _lastDocument = null;
+      _hasMore = true;
       notifyListeners();
       return;
     }
 
-    // 2. Sử dụng lệnh .where() để LỌC dữ liệu trên server: chỉ lấy các document có 'user_id' trùng với UID của người này
     _transactionSubscription?.cancel();
+    // Lắng nghe realtime nhưng giới hạn số lượng để tiết kiệm tài nguyên
+    // Khi có thay đổi ở bất kỳ record nào, snapshot này sẽ trigger
     _transactionSubscription = _transactionCollection
         .where('user_id', isEqualTo: currentUser.uid)
         .orderBy('date', descending: true)
+        .limit(_pageSize)
         .snapshots()
         .listen((snapshot) {
+          if (snapshot.docs.isNotEmpty) {
+            _lastDocument = snapshot.docs.last;
+            // Nếu snapshot trả về ít hơn page size, nghĩa là hết dữ liệu
+            _hasMore = snapshot.docs.length == _pageSize;
+          } else {
+            _hasMore = false;
+          }
+
           _transactions = snapshot.docs.map((doc) {
             final data = doc.data() as Map<String, dynamic>;
             return TransactionModel(
@@ -131,8 +226,59 @@ class FinanceProvider with ChangeNotifier {
             );
           }).toList();
 
-          notifyListeners(); // Cập nhật lại giao diện Dashboard thật
+          _updateGroupedTransactions();
+          _calculateTotals();
+          notifyListeners();
         });
+  }
+
+  // Tải thêm giao dịch khi cuộn xuống (Infinite Scroll)
+  Future<void> loadMoreTransactions() async {
+    if (_isLoadingMore || !_hasMore || _lastDocument == null) return;
+
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    _isLoadingMore = true;
+    notifyListeners();
+
+    try {
+      final snapshot = await _transactionCollection
+          .where('user_id', isEqualTo: currentUser.uid)
+          .orderBy('date', descending: true)
+          .startAfterDocument(_lastDocument!)
+          .limit(_pageSize)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        _lastDocument = snapshot.docs.last;
+        _hasMore = snapshot.docs.length == _pageSize;
+
+        final newTransactions = snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return TransactionModel(
+            id: doc.id.hashCode,
+            documentId: doc.id,
+            amount: (data['amount'] as num).toDouble(),
+            type: data['type'],
+            categoryId: (data['category_id'] ?? '').toString(),
+            date: DateTime.parse(data['date']),
+            note: data['note'] ?? '',
+          );
+        }).toList();
+
+        _transactions.addAll(newTransactions);
+        _updateGroupedTransactions();
+        _calculateTotals();
+      } else {
+        _hasMore = false;
+      }
+    } catch (e) {
+      developer.log("Lỗi khi tải thêm giao dịch", error: e);
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
+    }
   }
 
   // LẮNG NGHE DANH MỤC THÀNH PHẦN (Gọi hàm này chạy song song lúc đăng nhập)
@@ -174,7 +320,7 @@ class FinanceProvider with ChangeNotifier {
 
       await _transactionCollection.add(txMap);
     } catch (e) {
-      print("Lỗi khi thêm dữ liệu phân quyền lên Firebase: $e");
+      developer.log("Lỗi khi thêm dữ liệu phân quyền lên Firebase", error: e);
     }
   }
 
@@ -199,7 +345,7 @@ class FinanceProvider with ChangeNotifier {
 
       await _categoryCollection.add(newCat.toMap());
     } catch (e) {
-      print("Lỗi thêm danh mục: $e");
+      developer.log("Lỗi thêm danh mục", error: e);
     }
   }
 
@@ -209,7 +355,7 @@ class FinanceProvider with ChangeNotifier {
       if (category.id == null) return;
       await _categoryCollection.doc(category.id).update(category.toMap());
     } catch (e) {
-      print("Lỗi cập nhật danh mục: $e");
+      developer.log("Lỗi cập nhật danh mục", error: e);
     }
   }
 
@@ -222,7 +368,7 @@ class FinanceProvider with ChangeNotifier {
           .toList();
       notifyListeners();
     } catch (e) {
-      print("Lỗi xóa danh mục: $e");
+      developer.log("Lỗi xóa danh mục", error: e);
     }
   }
 
@@ -232,7 +378,7 @@ class FinanceProvider with ChangeNotifier {
       await _transactionCollection.doc(documentId).delete();
       // Không cần gọi notifyListeners() vì listenToTransactions() đang lắng nghe realtime sẽ tự cập nhật
     } catch (e) {
-      print("Lỗi khi xóa giao dịch: $e");
+      developer.log("Lỗi khi xóa giao dịch", error: e);
     }
   }
 
@@ -250,7 +396,7 @@ class FinanceProvider with ChangeNotifier {
 
       await _transactionCollection.doc(documentId).update(txMap);
     } catch (e) {
-      print("Lỗi khi cập nhật giao dịch: $e");
+      developer.log("Lỗi khi cập nhật giao dịch", error: e);
     }
   }
 }

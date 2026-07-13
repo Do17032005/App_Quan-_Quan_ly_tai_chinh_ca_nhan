@@ -20,5 +20,7 @@
   "budgetLimit": "Hạn mức ngân sách",
   "notifications": "Thông báo",
   "dailyReminder": "Nhắc nhở hàng ngày",
-  "language": "Ngôn ngữ"
+  "language": "Ngôn ngữ",
+  "calendar": "Lịch",
+  "total": "Tổng cộng"
 }

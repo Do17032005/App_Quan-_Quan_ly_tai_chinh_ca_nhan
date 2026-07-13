@@ -6,10 +6,10 @@ class NumericCalculatorKeyboard extends StatefulWidget {
   final VoidCallback onOk;
 
   const NumericCalculatorKeyboard({
-    Key? key,
+    super.key,
     required this.controller,
     required this.onOk,
-  }) : super(key: key);
+  });
 
   @override
   State<NumericCalculatorKeyboard> createState() => _NumericCalculatorKeyboardState();
@@ -55,7 +55,7 @@ class _NumericCalculatorKeyboardState extends State<NumericCalculatorKeyboard> {
       // Thay thế các ký tự hiển thị sang ký tự toán học
       String finalExpression = _expression.replaceAll('x', '*').replaceAll('÷', '/');
       
-      Parser p = Parser();
+      GrammarParser p = GrammarParser();
       Expression exp = p.parse(finalExpression);
       ContextModel cm = ContextModel();
       double eval = exp.evaluate(EvaluationType.REAL, cm);

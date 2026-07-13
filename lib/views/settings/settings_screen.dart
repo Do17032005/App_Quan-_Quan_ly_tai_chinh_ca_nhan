@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app/l10n/app_localizations.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -26,18 +27,18 @@ class SettingsScreen extends StatelessWidget {
               _SectionHeader(title: l10n.appearance),
               SwitchListTile(
                 title: Text(l10n.darkMode),
-                secondary: const Icon(Icons.dark_mode),
+                secondary: Icon(Icons.dark_mode, color: Colors.blue.shade600),
                 value: settings.isDarkMode,
                 onChanged: (value) => settings.toggleDarkMode(value),
               ),
               SwitchListTile(
                 title: Text(l10n.hideBalance),
-                secondary: const Icon(Icons.visibility_off),
+                secondary: Icon(Icons.visibility_off, color: Colors.blue.shade600),
                 value: settings.isBalanceHidden,
                 onChanged: (value) => settings.toggleBalanceHidden(value),
               ),
               ListTile(
-                leading: const Icon(Icons.language),
+                leading: Icon(Icons.language, color: Colors.blue.shade600),
                 title: Text(l10n.language),
                 trailing: DropdownButton<String>(
                   value: settings.locale.languageCode,
@@ -55,7 +56,7 @@ class SettingsScreen extends StatelessWidget {
               // --- TÀI CHÍNH ---
               _SectionHeader(title: l10n.finance),
               ListTile(
-                leading: const Icon(Icons.attach_money),
+                leading: Icon(Icons.attach_money, color: Colors.blue.shade600),
                 title: Text(l10n.currency),
                 trailing: DropdownButton<String>(
                   value: settings.currency,
@@ -69,7 +70,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.calendar_today),
+                leading: Icon(Icons.calendar_today, color: Colors.blue.shade600),
                 title: const Text('Ngày bắt đầu tháng'),
                 trailing: DropdownButton<int>(
                   value: settings.startOfMonth,
@@ -85,7 +86,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.account_balance_wallet),
+                leading: Icon(Icons.account_balance_wallet, color: Colors.blue.shade600),
                 title: Text(l10n.budgetLimit),
                 subtitle: Text(
                   settings.budgetLimit > 0
@@ -104,7 +105,7 @@ class SettingsScreen extends StatelessWidget {
               SwitchListTile(
                 title: Text(l10n.dailyReminder),
                 subtitle: Text('Lúc ${settings.reminderTime.format(context)}'),
-                secondary: const Icon(Icons.notifications_active),
+                secondary: Icon(Icons.notifications_active, color: Colors.blue.shade600),
                 value: settings.isReminderEnabled,
                 onChanged: (value) async {
                   await settings.toggleReminder(value);
@@ -122,9 +123,42 @@ class SettingsScreen extends StatelessWidget {
               SwitchListTile(
                 title: const Text('Cảnh báo vượt hạn mức'),
                 subtitle: const Text('Thông báo khi chi tiêu vượt ngân sách'),
-                secondary: const Icon(Icons.warning_amber),
+                secondary: Icon(Icons.warning_amber, color: Colors.blue.shade600),
                 value: settings.isBudgetAlertEnabled,
                 onChanged: (value) => settings.toggleBudgetAlert(value),
+              ),
+              const Divider(),
+
+              // --- TÀI KHOẢN ---
+              ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text(
+                  'Đăng xuất',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+                onTap: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Đăng xuất'),
+                      content: const Text('Bạn có chắc chắn muốn đăng xuất không?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Hủy'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true && context.mounted) {
+                    await Provider.of<AuthProvider>(context, listen: false).logout();
+                  }
+                },
               ),
             ],
           );
@@ -172,7 +206,7 @@ class SettingsScreen extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  const _SectionHeader({Key? key, required this.title}) : super(key: key);
+  const _SectionHeader({required this.title});
 
   @override
   Widget build(BuildContext context) {

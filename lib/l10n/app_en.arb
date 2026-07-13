@@ -20,5 +20,7 @@
   "budgetLimit": "Budget Limit",
   "notifications": "Notifications",
   "dailyReminder": "Daily Reminder",
-  "language": "Language"
+  "language": "Language",
+  "calendar": "Calendar",
+  "total": "Total"
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../data/models/category_model.dart';
@@ -9,7 +10,7 @@ import '../../utils/icon_utils.dart';
 import '../transaction/edit_transaction_screen.dart';
 
 class StatisticsScreen extends StatefulWidget {
-  const StatisticsScreen({Key? key}) : super(key: key);
+  const StatisticsScreen({super.key});
 
   @override
   State<StatisticsScreen> createState() => _StatisticsScreenState();
@@ -30,18 +31,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   double? _minAmount;
   double? _maxAmount;
 
-  // Hàm lấy màu từ model, nếu không có thì dùng màu mặc định
-  Color _getCategoryColor(FinanceProvider provider, String categoryId) {
-    final category = provider.categories.firstWhere(
-      (cat) => cat.id == categoryId,
-      orElse: () => CategoryModel(
-        name: 'Khác',
-        type: 'expense',
-        iconName: 'category',
-        colorValue: 0xFF9E9E9E,
-      ),
-    );
-    return Color(category.colorValue);
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<FinanceProvider>(context, listen: false).fetchAllTransactionsForStats();
+    });
   }
 
   void _previousPeriod() {
@@ -75,38 +70,28 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     };
 
     // 1. Lọc giao dịch
-    final filteredTransactions = financeProvider.transactions.where((tx) {
-      // Nếu đang tìm kiếm, ưu tiên lọc theo từ khóa trên toàn bộ dữ liệu (hoặc có thể kết hợp lọc thời gian nếu muốn)
-      if (_isSearching && _searchQuery.isNotEmpty) {
-        final noteMatch = tx.note.toLowerCase().contains(_searchQuery.toLowerCase());
-        final catMatch = (categoryMap[tx.categoryId]?.name ?? 'Khác')
-            .toLowerCase()
-            .contains(_searchQuery.toLowerCase());
-        return noteMatch || catMatch;
-      }
-
-      // Lọc theo thời gian (khi không tìm kiếm hoặc tìm kiếm trống)
-      bool timeMatch;
-      if (_isMonthly) {
-        timeMatch = tx.date.year == _selectedDate.year &&
-            tx.date.month == _selectedDate.month;
-      } else {
-        timeMatch = tx.date.year == _selectedDate.year;
-      }
-      if (!timeMatch) return false;
-
-      // Lọc theo danh mục
-      if (_selectedCategory != 'Tất cả' &&
-          (categoryMap[tx.categoryId]?.name ?? 'Khác') != _selectedCategory) {
-        return false;
-      }
-
-      // Lọc theo số tiền
-      if (_minAmount != null && tx.amount < _minAmount!) return false;
-      if (_maxAmount != null && tx.amount > _maxAmount!) return false;
-
-      return true;
-    }).toList();
+    final filteredTransactions = (_isSearching && _searchQuery.isNotEmpty)
+        ? financeProvider.statsTransactions.where((tx) {
+            final noteMatch = tx.note.toLowerCase().contains(_searchQuery.toLowerCase());
+            final catMatch = (categoryMap[tx.categoryId]?.name ?? 'Khác')
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase());
+            return noteMatch || catMatch;
+          }).toList()
+        : (_isMonthly 
+            ? financeProvider.getTransactionsByMonth(_selectedDate)
+            : financeProvider.getTransactionsByYear(_selectedDate.year))
+          .where((tx) {
+            // Lọc theo danh mục
+            if (_selectedCategory != 'Tất cả' &&
+                (categoryMap[tx.categoryId]?.name ?? 'Khác') != _selectedCategory) {
+              return false;
+            }
+            // Lọc theo số tiền
+            if (_minAmount != null && tx.amount < _minAmount!) return false;
+            if (_maxAmount != null && tx.amount > _maxAmount!) return false;
+            return true;
+          }).toList();
 
     // 2. Tính toán các chỉ số tóm tắt
     double periodIncome = 0;
@@ -175,10 +160,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   });
                 },
               )
-            : IconButton(
-                icon: const Icon(Icons.camera_alt_outlined, color: Colors.blue),
-                onPressed: () {},
-              ),
+            : null,
         actions: [
           if (!_isSearching)
             IconButton(
@@ -333,21 +315,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                       }).toList(),
                                     ),
                                   ),
-                                  // Text ở giữa biểu đồ
-                                  if (sortedEntries.isNotEmpty)
-                                    Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          categoryMap[sortedEntries.first.key]?.name ?? 'Khác',
-                                          style: TextStyle(
-                                            color: Color(categoryMap[sortedEntries.first.key]?.colorValue ?? 0xFF9E9E9E),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                 ],
                               ),
                             ),
@@ -393,7 +360,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                   ],
                                 ),
                               );
-                            }).toList(),
+                            }),
 
                             const Divider(height: 40, thickness: 8, color: Color(0xFFF5F5F5)),
 
@@ -443,10 +410,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                     CircleAvatar(
                                       backgroundColor: Color(category.colorValue).withOpacity(0.1),
                                       radius: 18,
-                                      child: Icon(
+                                      child: FaIcon(
                                         IconUtils.getIconData(category.iconName),
                                         color: Color(category.colorValue),
-                                        size: 18,
+                                        size: 16,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -546,7 +513,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
               ),
             ),
-            ...txs.map((tx) => _buildTransactionItem(tx, categoryMap, settings)).toList(),
+            ...txs.map((tx) => _buildTransactionItem(tx, categoryMap, settings)),
           ],
         );
       },
@@ -582,10 +549,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             CircleAvatar(
               backgroundColor: Color(category.colorValue).withOpacity(0.1),
               radius: 18,
-              child: Icon(
+              child: FaIcon(
                 IconUtils.getIconData(category.iconName),
                 color: Color(category.colorValue),
-                size: 18,
+                size: 16,
               ),
             ),
             const SizedBox(width: 12),
@@ -689,15 +656,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  String _getCategoryName(FinanceProvider financeProvider, String categoryId) {
-    for (final category in financeProvider.categories) {
-      if (category.id == categoryId) {
-        return category.name;
-      }
-    }
-    return 'Khác';
-  }
-
   void _showFilterDialog(FinanceProvider provider) {
     showModalBottomSheet(
       context: context,
@@ -739,17 +697,65 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
                 const SizedBox(height: 20),
                 const Text('Danh mục',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                DropdownButton<String>(
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                  ),
                   isExpanded: true,
                   value: _selectedCategory,
                   items: [
                     'Tất cả',
                     ...provider.categories.map((e) => e.name).toSet()
                   ].map((String value) {
+                    // Tìm category để lấy icon và màu sắc
+                    final category = provider.categories.firstWhere(
+                      (c) => c.name == value,
+                      orElse: () => CategoryModel(
+                        id: 'all',
+                        name: 'Tất cả',
+                        type: 'all',
+                        iconName: 'list',
+                        colorValue: 0xFF2196F3,
+                      ),
+                    );
+
                     return DropdownMenuItem<String>(
                       value: value,
-                      child: Text(value),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Color(category.colorValue).withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: value == 'Tất cả'
+                                ? const Icon(Icons.apps, color: Colors.blue, size: 18)
+                                : FaIcon(
+                                    IconUtils.getIconData(category.iconName),
+                                    color: Color(category.colorValue),
+                                    size: 16,
+                                  ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            value,
+                            style: const TextStyle(fontSize: 15),
+                          ),
+                        ],
+                      ),
                     );
                   }).toList(),
                   onChanged: (val) {
@@ -758,22 +764,36 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     }
                   },
                 ),
-                const SizedBox(height: 20),
-                const Text('Khoảng giá (đ)',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 25),
+                const Text('Khoảng giá',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
-                        decoration: const InputDecoration(hintText: 'Từ'),
+                        decoration: InputDecoration(
+                          hintText: 'Từ',
+                          prefixIcon: const Icon(Icons.remove_circle_outline, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
                         keyboardType: TextInputType.number,
                         onChanged: (val) => _minAmount = double.tryParse(val),
                       ),
                     ),
-                    const SizedBox(width: 20),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('—', style: TextStyle(color: Colors.grey)),
+                    ),
                     Expanded(
                       child: TextField(
-                        decoration: const InputDecoration(hintText: 'Đến'),
+                        decoration: InputDecoration(
+                          hintText: 'Đến',
+                          prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
                         keyboardType: TextInputType.number,
                         onChanged: (val) => _maxAmount = double.tryParse(val),
                       ),

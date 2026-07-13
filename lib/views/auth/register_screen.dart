@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+  const RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -67,8 +67,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Vui lòng nhập Email';
+                    }
                     return null;
                   },
                 ),
@@ -86,10 +87,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Vui lòng nhập mật khẩu';
-                    if (value.length < 6)
+                    }
+                    if (value.length < 6) {
                       return 'Mật khẩu phải từ 6 ký tự trở lên';
+                    }
                     return null;
                   },
                 ),
@@ -107,8 +110,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value != _passwordController.text)
+                    if (value != _passwordController.text) {
                       return 'Mật khẩu xác nhận không khớp';
+                    }
                     return null;
                   },
                 ),
@@ -124,6 +128,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             if (_formKey.currentState!.validate()) {
                               setState(() => _isLoading = true);
 
+                              final messenger = ScaffoldMessenger.of(context);
+                              final navigator = Navigator.of(context);
+
                               // Gọi hàm đăng ký và hứng chuỗi lỗi trả về từ Firebase
                               String? error = await authProvider
                                   .registerWithEmail(
@@ -131,47 +138,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     _passwordController.text.trim(),
                                   );
 
+                              if (!mounted) return;
                               setState(() => _isLoading = false);
 
                               if (error != null) {
                                 // BẮN THÔNG BÁO NẾU TÀI KHOẢN ĐÃ TỒN TẠI HOẶC CÁC LỖI KHÁC
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.warning_amber_rounded,
-                                            color: Colors.white,
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(child: Text(error)),
-                                        ],
-                                      ),
-                                      backgroundColor: Colors.orange.shade800,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(child: Text(error)),
+                                      ],
                                     ),
-                                  );
-                                }
+                                    backgroundColor: Colors.orange.shade800,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
                               } else {
                                 // Đăng ký thành công và chưa tồn tại tài khoản trùng
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Tạo tài khoản thành công! Hãy đăng nhập.',
-                                      ),
-                                      backgroundColor: Colors.green,
-                                      behavior: SnackBarBehavior.floating,
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Tạo tài khoản thành công! Hãy đăng nhập.',
                                     ),
-                                  );
-                                  Navigator.pop(
-                                    context,
-                                  ); // Quay về lại màn hình Login
-                                }
+                                    backgroundColor: Colors.green,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                navigator.pop(); // Quay về lại màn hình Login
                               }
                             }
                           },

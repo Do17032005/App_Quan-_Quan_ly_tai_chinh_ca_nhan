@@ -5,7 +5,7 @@ import '../../providers/finance_provider.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -28,10 +28,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final financeProvider = Provider.of<FinanceProvider>(
-      context,
-      listen: false,
-    );
 
     return Scaffold(
       body: Center(
@@ -75,8 +71,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Vui lòng nhập Email';
+                    }
                     if (!RegExp(
                       r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                     ).hasMatch(value)) {
@@ -106,10 +103,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Vui lòng nhập mật khẩu';
-                    if (value.length < 6)
+                    }
+                    if (value.length < 6) {
                       return 'Mật khẩu phải từ 6 ký tự trở lên';
+                    }
                     return null;
                   },
                 ),
@@ -125,51 +124,50 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (_formKey.currentState!.validate()) {
                               setState(() => _isLoading = true);
 
+                              final messenger = ScaffoldMessenger.of(context);
+                              final finance = Provider.of<FinanceProvider>(context, listen: false);
+
                               // Gọi hàm đăng nhập và hứng chuỗi lỗi trả về
                               String? error = await authProvider.loginWithEmail(
                                 _emailController.text.trim(),
                                 _passwordController.text.trim(),
                               );
 
+                              if (!mounted) return;
                               setState(() => _isLoading = false);
 
                               if (error != null) {
                                 // BẮN THÔNG BÁO LỖI TIẾNG VIỆT LÊN MÀN HÌNH (Sai mật khẩu, chưa có tài khoản...)
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.error_outline,
-                                            color: Colors.white,
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(child: Text(error)),
-                                        ],
-                                      ),
-                                      backgroundColor: Colors.red.shade700,
-                                      behavior: SnackBarBehavior
-                                          .floating, // Hiển thị dạng bong bóng nổi đẹp mắt
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.error_outline,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(child: Text(error)),
+                                      ],
                                     ),
-                                  );
-                                }
+                                    backgroundColor: Colors.red.shade700,
+                                    behavior: SnackBarBehavior.floating, // Hiển thị dạng bong bóng nổi đẹp mắt
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
                               } else {
                                 // Nếu không có lỗi -> Thành công
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Đăng nhập thành công!'),
-                                      backgroundColor: Colors.green,
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                                financeProvider.listenToTransactions();
-                                financeProvider.listenToCategories();
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Đăng nhập thành công!'),
+                                    backgroundColor: Colors.green,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                finance.listenToTransactions();
+                                finance.listenToCategories();
                               }
                             }
                           },

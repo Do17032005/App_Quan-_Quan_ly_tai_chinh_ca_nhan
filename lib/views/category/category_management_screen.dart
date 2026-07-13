@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../providers/finance_provider.dart';
 import '../../data/models/category_model.dart';
 import '../../utils/icon_utils.dart';
@@ -7,7 +8,7 @@ import 'edit_category_screen.dart';
 
 class CategoryManagementScreen extends StatefulWidget {
   final String initialType;
-  const CategoryManagementScreen({Key? key, this.initialType = 'expense'}) : super(key: key);
+  const CategoryManagementScreen({super.key, this.initialType = 'expense'});
 
   @override
   State<CategoryManagementScreen> createState() => _CategoryManagementScreenState();
@@ -95,7 +96,18 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                   final cat = categories[index];
                   final isCustom = cat.userId != null;
                   return ListTile(
-                    leading: Icon(IconUtils.getIconData(cat.iconName), color: Color(cat.colorValue)),
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(cat.colorValue).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: FaIcon(
+                        IconUtils.getIconData(cat.iconName),
+                        color: Color(cat.colorValue),
+                        size: 18,
+                      ),
+                    ),
                     title: Text(cat.name),
                     trailing: isCustom 
                       ? IconButton(
@@ -137,11 +149,25 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
           TextButton(
             onPressed: () async {
               if (category.id != null) {
+                final navigator = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
                 await provider.deleteCustomCategory(category.id!);
                 if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Đã xóa danh mục ${category.name}')),
+                  navigator.pop();
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.delete_sweep, color: Colors.white),
+                          const SizedBox(width: 12),
+                          Text('Đã xóa danh mục ${category.name}'),
+                        ],
+                      ),
+                      backgroundColor: Colors.redAccent,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      duration: const Duration(seconds: 2),
+                    ),
                   );
                 }
               }

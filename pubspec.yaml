@@ -48,7 +48,7 @@ dependencies:
   fl_chart: ^0.66.0
 
   # Bộ icon phong phú để làm danh mục chi tiêu
-  font_awesome_flutter: ^10.7.0
+  font_awesome_flutter: ^11.0.0
   
   # Thư viện tính toán cho bàn phím số
   math_expressions: ^2.5.0

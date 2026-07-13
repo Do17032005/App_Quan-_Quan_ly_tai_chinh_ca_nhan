@@ -8,16 +8,15 @@ class BalanceCard extends StatelessWidget {
   final double totalExpense;
 
   const BalanceCard({
-    Key? key,
+    super.key,
     required this.totalIncome,
     required this.totalExpense,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final double balance = totalIncome - totalExpense;
-    final currencyFormat = settings.currencyFormat;
     final isHidden = settings.isBalanceHidden;
 
     return Card(

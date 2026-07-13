@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
@@ -11,7 +12,7 @@ import 'widgets/numeric_calculator_keyboard.dart';
 
 class EditTransactionScreen extends StatefulWidget {
   final TransactionModel transaction;
-  const EditTransactionScreen({Key? key, required this.transaction}) : super(key: key);
+  const EditTransactionScreen({super.key, required this.transaction});
 
   @override
   State<EditTransactionScreen> createState() => _EditTransactionScreenState();
@@ -242,21 +243,26 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     onTap: () => setState(() => _selectedCategoryId = cat.id),
                     child: Container(
                       decoration: BoxDecoration(
+                        color: isSelected ? Color(cat.colorValue).withOpacity(0.1) : Colors.transparent,
                         border: Border.all(color: isSelected ? Color(cat.colorValue) : Colors.grey.shade200),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          FaIcon(
                             IconUtils.getIconData(cat.iconName),
                             color: Color(cat.colorValue),
-                            size: 30,
+                            size: 24,
                           ),
                           const SizedBox(height: 4),
                           Text(
                             cat.name,
-                            style: TextStyle(fontSize: 12, color: isSelected ? Color(cat.colorValue) : Colors.black),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isSelected ? Color(cat.colorValue) : Colors.black,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -313,14 +319,17 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   }
 
   Future<void> _updateTransaction() async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    
     if (_amountController.text.isEmpty || _amountController.text == '0') {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập số tiền')),
       );
       return;
     }
     if (_selectedCategoryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn danh mục')),
       );
       return;
@@ -345,7 +354,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       await financeProvider.updateTransaction(widget.transaction.documentId!, updatedTx);
     }
     
-    if (mounted) Navigator.pop(context);
+    navigator.pop();
   }
 
   void _confirmDelete() {
@@ -361,14 +370,13 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           ),
           TextButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
               final financeProvider = Provider.of<FinanceProvider>(context, listen: false);
               if (widget.transaction.documentId != null) {
                 await financeProvider.deleteTransaction(widget.transaction.documentId!);
               }
-              if (mounted) {
-                Navigator.pop(context); // Đóng dialog
-                Navigator.pop(context); // Quay lại màn hình trước đó
-              }
+              navigator.pop(); // Đóng dialog
+              navigator.pop(); // Quay lại màn hình trước đó
             },
             child: const Text('Xóa', style: TextStyle(color: Colors.red)),
           ),
