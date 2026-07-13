@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/settings_provider.dart';
 
 class BalanceCard extends StatelessWidget {
   final double totalIncome;
@@ -13,8 +14,10 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
     final double balance = totalIncome - totalExpense;
-    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
+    final currencyFormat = settings.currencyFormat;
+    final isHidden = settings.isBalanceHidden;
 
     return Card(
       elevation: 4,
@@ -65,7 +68,7 @@ class BalanceCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              currencyFormat.format(balance),
+              isHidden ? '******' : currencyFormat.format(balance),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 32,
@@ -89,7 +92,7 @@ class BalanceCard extends StatelessWidget {
                           style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
-                          currencyFormat.format(totalIncome),
+                          isHidden ? '******' : currencyFormat.format(totalIncome),
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -112,7 +115,7 @@ class BalanceCard extends StatelessWidget {
                           style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
-                          currencyFormat.format(totalExpense),
+                          isHidden ? '******' : currencyFormat.format(totalExpense),
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

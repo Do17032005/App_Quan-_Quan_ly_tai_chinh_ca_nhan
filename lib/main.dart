@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart'; // Import AuthProvider
 import 'providers/finance_provider.dart';
+import 'providers/settings_provider.dart';
+import 'services/notification_service.dart';
 import 'views/dashboard/dashboard_screen.dart';
 import 'views/auth/login_screen.dart'; // File giao diện chúng ta sẽ tạo ở bước sau
 
@@ -15,12 +18,20 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await initializeDateFormatting('vi_VN', null);
+  
+  // Khởi tạo NotificationService
+  await NotificationService().init();
+  
+  // Xin quyền thông báo trên Android 13+
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) => AuthProvider()),
-        ChangeNotifierProvider(
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (context) => AuthProvider()),
+          ChangeNotifierProvider(create: (context) => SettingsProvider()),
+          ChangeNotifierProvider(
           create: (context) => FinanceProvider()
             ..listenToTransactions()
             ..listenToCategories(),
@@ -39,19 +50,29 @@ class MyApp extends StatelessWidget {
     // Kiểm tra xem người dùng đã đăng nhập chưa để điều hướng màn hình lúc mở App
     final authProvider = Provider.of<AuthProvider>(context);
 
-    return MaterialApp(
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      debugShowCheckedModeBanner: false,
-      title: 'Finance Manager',
-      theme: ThemeData(
-        useMaterial3: true,
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey.shade100,
-      ),
-      // Nếu đã đăng nhập -> Vào thẳng Dashboard, nếu chưa -> Vào màn hình Login
-      home: authProvider.isAuthenticated
-          ? const DashboardScreen()
-          : const LoginScreen(),
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        return MaterialApp(
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          debugShowCheckedModeBanner: false,
+          title: 'Finance Manager',
+          theme: ThemeData(
+            useMaterial3: true,
+            colorSchemeSeed: Colors.blue,
+            brightness: Brightness.light,
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorSchemeSeed: Colors.blue,
+            brightness: Brightness.dark,
+          ),
+          themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          // Nếu đã đăng nhập -> Vào thẳng Dashboard, nếu chưa -> Vào màn hình Login
+          home: authProvider.isAuthenticated
+              ? const DashboardScreen()
+              : const LoginScreen(),
+        );
+      },
     );
   }
 }

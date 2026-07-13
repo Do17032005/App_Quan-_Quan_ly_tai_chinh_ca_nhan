@@ -9,6 +9,8 @@ import '../calendar/calendar_screen.dart';
 import '../transaction/add_transaction_screen.dart';
 import '../transaction/edit_transaction_screen.dart';
 import '../statistics/statistics_screen.dart';
+import '../settings/settings_screen.dart';
+import '../../providers/settings_provider.dart';
 import 'widgets/balance_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -27,6 +29,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const DashboardHomeContent(),
       const StatisticsScreen(),
       const CalendarScreen(),
+      const SettingsScreen(),
     ];
 
     return Scaffold(
@@ -53,6 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed, // Giữ style cũ khi có >3 items
         onTap: (index) {
           setState(() {
             _currentIndex = index;
@@ -70,6 +74,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icon(Icons.calendar_month),
             label: 'Lịch',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Cài đặt',
+          ),
         ],
       ),
     );
@@ -81,7 +89,9 @@ class DashboardHomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
+    final settings = Provider.of<SettingsProvider>(context);
+    final currencyFormat = settings.currencyFormat;
+    final isHidden = settings.isBalanceHidden;
 
     return Scaffold(
       appBar: AppBar(
@@ -297,7 +307,7 @@ class DashboardHomeContent extends StatelessWidget {
                                               MainAxisAlignment.center,
                                           children: [
                                             Text(
-                                              '${isIncome ? '+' : '-'}${currencyFormat.format(tx.amount)}',
+                                              isHidden ? '******' : '${isIncome ? '+' : '-'}${currencyFormat.format(tx.amount)}',
                                               style: TextStyle(
                                                 color: isIncome
                                                     ? Colors.green

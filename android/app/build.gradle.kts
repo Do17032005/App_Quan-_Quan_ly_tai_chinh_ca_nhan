@@ -23,6 +23,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -54,7 +55,9 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            // Tạm thời sử dụng debug key để có thể build file APK cài đặt trên điện thoại
+            // Khi nào đưa app lên Google Play thì đổi lại thành "release" và tạo file key.properties
+            signingConfig = signingConfigs.getByName("debug")
 
             isMinifyEnabled = false
             isShrinkResources = false
@@ -64,4 +67,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }

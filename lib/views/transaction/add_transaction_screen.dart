@@ -7,6 +7,7 @@ import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
 import '../../utils/icon_utils.dart';
 import '../../main.dart';
+import '../../providers/settings_provider.dart';
 import '../category/category_management_screen.dart'; // Import màn hình quản lý danh mục
 import 'widgets/numeric_calculator_keyboard.dart';
 
@@ -74,6 +75,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   Widget build(BuildContext context) {
     final financeProvider = Provider.of<FinanceProvider>(context);
+    final settingsProvider = Provider.of<SettingsProvider>(context);
     List<CategoryModel> filteredCategories = financeProvider.categories
         .where((cat) => cat.type == _transactionType)
         .toList();
@@ -227,7 +229,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                               ),
                             ),
                             const Spacer(),
-                            const Text('đ', style: TextStyle(fontSize: 16)),
+                            Text(settingsProvider.currency == 'USD' ? '\$' : 'đ', style: const TextStyle(fontSize: 16)),
                           ],
                         ),
                       ),
@@ -393,10 +395,35 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
 
     final financeProvider = Provider.of<FinanceProvider>(context, listen: false);
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
     
     // Đảm bảo số tiền luôn dương trong DB, logic âm/dương sẽ do field 'type' quyết định
     double amount = double.tryParse(_amountController.text) ?? 0;
     if (amount < 0) amount = amount.abs();
+
+    if (_transactionType == 'expense' && settingsProvider.isBudgetAlertEnabled && settingsProvider.budgetLimit > 0) {
+      final totalExpense = financeProvider.totalExpense;
+      if (totalExpense + amount > settingsProvider.budgetLimit) {
+        bool? confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Cảnh báo ngân sách', style: TextStyle(color: Colors.red)),
+            content: Text('Khoản chi này sẽ làm tổng chi tiêu vượt hạn mức (${settingsProvider.currencyFormat.format(settingsProvider.budgetLimit)}). Bạn có chắc chắn muốn tiếp tục?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Hủy'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Tiếp tục', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        );
+        if (confirm != true) return;
+      }
+    }
 
     final newTx = TransactionModel(
       amount: amount,
