@@ -8,6 +8,7 @@ class SettingsProvider with ChangeNotifier {
   // 1. Giao diện
   bool _isDarkMode = false;
   bool _isBalanceHidden = false;
+  Locale _locale = const Locale('vi');
 
   // 2. Tài chính
   String _currency = 'VNĐ';
@@ -22,6 +23,7 @@ class SettingsProvider with ChangeNotifier {
   // === GETTERS ===
   bool get isDarkMode => _isDarkMode;
   bool get isBalanceHidden => _isBalanceHidden;
+  Locale get locale => _locale;
   String get currency => _currency;
   int get startOfMonth => _startOfMonth;
   double get budgetLimit => _budgetLimit;
@@ -47,6 +49,9 @@ class SettingsProvider with ChangeNotifier {
     
     _isDarkMode = prefs.getBool('isDarkMode') ?? false;
     _isBalanceHidden = prefs.getBool('isBalanceHidden') ?? false;
+    
+    final languageCode = prefs.getString('languageCode') ?? 'vi';
+    _locale = Locale(languageCode);
     
     _currency = prefs.getString('currency') ?? 'VNĐ';
     _startOfMonth = prefs.getInt('startOfMonth') ?? 1;
@@ -75,6 +80,13 @@ class SettingsProvider with ChangeNotifier {
     _isBalanceHidden = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isBalanceHidden', value);
+    notifyListeners();
+  }
+
+  Future<void> setLanguage(String languageCode) async {
+    _locale = Locale(languageCode);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('languageCode', languageCode);
     notifyListeners();
   }
 

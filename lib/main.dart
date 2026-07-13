@@ -3,13 +3,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'firebase_options.dart';
-import 'providers/auth_provider.dart'; // Import AuthProvider
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:app/l10n/app_localizations.dart';
+import 'firebase_options.dart'; 
+import 'providers/auth_provider.dart';
 import 'providers/finance_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/notification_service.dart';
 import 'views/dashboard/dashboard_screen.dart';
-import 'views/auth/login_screen.dart'; // File giao diện chúng ta sẽ tạo ở bước sau
+import 'views/auth/login_screen.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
@@ -67,6 +69,17 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.dark,
           ),
           themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          locale: settings.locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('vi', ''),
+            Locale('en', ''),
+          ],
           // Nếu đã đăng nhập -> Vào thẳng Dashboard, nếu chưa -> Vào màn hình Login
           home: authProvider.isAuthenticated
               ? const DashboardScreen()

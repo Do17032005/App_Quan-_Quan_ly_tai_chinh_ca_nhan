@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:app/l10n/app_localizations.dart';
 import '../../../providers/settings_provider.dart';
 
 class BalanceCard extends StatelessWidget {
@@ -46,9 +47,9 @@ class BalanceCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Số dư hiện tại",
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)?.totalBalance ?? "Số dư hiện tại",
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 16,
                   ),
@@ -87,9 +88,9 @@ class BalanceCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Thu nhập',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        Text(
+                          AppLocalizations.of(context)?.income ?? 'Thu nhập',
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
                           isHidden ? '******' : currencyFormat.format(totalIncome),
@@ -110,9 +111,9 @@ class BalanceCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Chi tiêu',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        Text(
+                          AppLocalizations.of(context)?.expense ?? 'Chi tiêu',
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
                           isHidden ? '******' : currencyFormat.format(totalExpense),

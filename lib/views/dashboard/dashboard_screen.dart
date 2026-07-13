@@ -11,6 +11,7 @@ import '../transaction/edit_transaction_screen.dart';
 import '../statistics/statistics_screen.dart';
 import '../settings/settings_screen.dart';
 import '../../providers/settings_provider.dart';
+import 'package:app/l10n/app_localizations.dart';
 import 'widgets/balance_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -64,19 +65,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
         selectedItemColor: Colors.blue.shade700,
         unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
+        items: [
+          BottomNavigationBarItem(icon: const Icon(Icons.home), label: AppLocalizations.of(context)?.dashboard ?? 'Trang chủ'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.pie_chart),
-            label: 'Thống kê',
+            icon: const Icon(Icons.pie_chart),
+            label: AppLocalizations.of(context)?.statistics ?? 'Thống kê',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.calendar_month),
-            label: 'Lịch',
+            label: 'Lịch', // Có thể thêm vào arb sau
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Cài đặt',
+            icon: const Icon(Icons.settings),
+            label: AppLocalizations.of(context)?.settings ?? 'Cài đặt',
           ),
         ],
       ),
@@ -95,9 +96,9 @@ class DashboardHomeContent extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Quản Lý Thu Chi',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context)?.appTitle ?? 'Quản Lý Thu Chi',
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -133,20 +134,20 @@ class DashboardHomeContent extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Tiêu đề danh sách
-                const Text(
-                  'Giao dịch gần đây',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  AppLocalizations.of(context)?.recentTransactions ?? 'Giao dịch gần đây',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
 
                 // 2. Danh sách giao dịch thật từ SQLite
                 Expanded(
                   child: transactions.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
-                            'Chưa có giao dịch nào.\nẤn nút + để thêm giao dịch đầu tiên!',
+                            AppLocalizations.of(context)?.noTransactions ?? 'Chưa có giao dịch nào.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey, fontSize: 16),
+                            style: const TextStyle(color: Colors.grey, fontSize: 16),
                           ),
                         )
                       : ListView.builder(

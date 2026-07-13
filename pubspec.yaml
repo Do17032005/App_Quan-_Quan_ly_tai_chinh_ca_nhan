@@ -42,7 +42,7 @@ dependencies:
   path: ^1.9.0
 
   # Định dạng tiền tệ (100,000đ) và ngày tháng (dd/MM/yyyy)
-  intl: ^0.19.0
+  intl: ^0.20.2
 
   # Vẽ biểu đồ thống kê (Điểm nhấn lấy điểm 9-10)
   fl_chart: ^0.66.0
@@ -62,6 +62,8 @@ dependencies:
   shared_preferences: ^2.5.5
   flutter_local_notifications: ^22.0.1
   timezone: ^0.11.1
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +80,9 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  # Kích hoạt tính năng tự động generate file ngôn ngữ (l10n)
+  generate: true
+  
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
