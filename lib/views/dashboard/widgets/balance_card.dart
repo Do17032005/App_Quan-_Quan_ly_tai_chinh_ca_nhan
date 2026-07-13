@@ -69,7 +69,7 @@ class BalanceCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              isHidden ? '******' : currencyFormat.format(balance),
+              isHidden ? '******' : settings.formatAmount(balance),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 32,
@@ -93,7 +93,7 @@ class BalanceCard extends StatelessWidget {
                           style: const TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
-                          isHidden ? '******' : currencyFormat.format(totalIncome),
+                          isHidden ? '******' : settings.formatAmount(totalIncome),
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -116,7 +116,7 @@ class BalanceCard extends StatelessWidget {
                           style: const TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
-                          isHidden ? '******' : currencyFormat.format(totalExpense),
+                          isHidden ? '******' : settings.formatAmount(totalExpense),
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

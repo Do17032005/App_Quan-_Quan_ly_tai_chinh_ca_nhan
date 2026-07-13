@@ -32,9 +32,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      if (widget.initialTransaction != null) {
+        setState(() {
+          _amountController.text = settings.convertToDisplay(widget.initialTransaction!.amount).toInt().toString();
+        });
+      }
+    });
     if (widget.initialTransaction != null) {
       _transactionType = widget.initialTransaction!.type;
-      _amountController.text = widget.initialTransaction!.amount.toInt().toString();
       _noteController.text = widget.initialTransaction!.note;
       _selectedCategoryId = widget.initialTransaction!.categoryId;
       _selectedDate = DateTime.now(); // Copy thường dùng cho ngày hiện tại
@@ -370,14 +377,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   String _formatAmount(String text) {
-    if (text.isEmpty) return '0';
-    try {
-      final number = double.parse(text);
-      final formatter = NumberFormat('#,###', 'vi_VN');
-      return formatter.format(number);
-    } catch (e) {
-      return text;
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    if (_amountController.text.isEmpty || _amountController.text == '0') {
+      return settings.formatAmount(0);
     }
+    double amount = double.tryParse(_amountController.text) ?? 0;
+    return settings.formatAmount(settings.convertToVND(amount));
   }
 
   Future<void> _saveTransaction() async {
@@ -400,6 +405,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     // Đảm bảo số tiền luôn dương trong DB, logic âm/dương sẽ do field 'type' quyết định
     double amount = double.tryParse(_amountController.text) ?? 0;
     if (amount < 0) amount = amount.abs();
+    amount = settingsProvider.convertToVND(amount);
 
     if (_transactionType == 'expense' && settingsProvider.isBudgetAlertEnabled && settingsProvider.budgetLimit > 0) {
       final totalExpense = financeProvider.totalExpense;
@@ -408,7 +414,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Cảnh báo ngân sách', style: TextStyle(color: Colors.red)),
-            content: Text('Khoản chi này sẽ làm tổng chi tiêu vượt hạn mức (${settingsProvider.currencyFormat.format(settingsProvider.budgetLimit)}). Bạn có chắc chắn muốn tiếp tục?'),
+            content: Text('Khoản chi này sẽ làm tổng chi tiêu vượt hạn mức (${settingsProvider.formatAmount(settingsProvider.budgetLimit)}). Bạn có chắc chắn muốn tiếp tục?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),

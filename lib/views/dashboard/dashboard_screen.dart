@@ -308,7 +308,7 @@ class DashboardHomeContent extends StatelessWidget {
                                               MainAxisAlignment.center,
                                           children: [
                                             Text(
-                                              isHidden ? '******' : '${isIncome ? '+' : '-'}${currencyFormat.format(tx.amount)}',
+                                              isHidden ? '******' : '${isIncome ? '+' : '-'}${settings.formatAmount(tx.amount)}',
                                               style: TextStyle(
                                                 color: isIncome
                                                     ? Colors.green

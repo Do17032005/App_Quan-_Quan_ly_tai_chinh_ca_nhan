@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../../providers/finance_provider.dart';
+import '../../providers/settings_provider.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({Key? key}) : super(key: key);
@@ -25,6 +26,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final financeProvider = Provider.of<FinanceProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context);
     final allTransactions = financeProvider.transactions;
 
     // --- LOGIC LỌC DỮ LIỆU THEO THÁNG ĐANG XEM ---
@@ -176,16 +178,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildSummaryColumn('Thu nhập', monthlyIncome, Colors.blue),
+                _buildSummaryColumn('Thu nhập', monthlyIncome, Colors.blue, settings),
                 _buildSummaryColumn(
                   'Chi tiêu',
                   monthlyExpense,
                   Colors.orange.shade800,
+                  settings,
                 ),
                 _buildSummaryColumn(
                   'Tổng',
                   monthlyTotal,
                   monthlyTotal >= 0 ? Colors.green : Colors.red,
+                  settings,
                   isTotal: true,
                 ),
               ],
@@ -195,7 +199,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           const SizedBox(height: 10),
 
           // 3. DANH SÁCH CHI TIẾT CÁC GIAO DỊCH CỦA NGÀY ĐANG ĐƯỢC CHỌN (NẾU CÓ)
-          Expanded(child: _buildDayTransactionsList(allTransactions)),
+          Expanded(child: _buildDayTransactionsList(allTransactions, settings)),
         ],
       ),
     );
@@ -205,10 +209,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget _buildSummaryColumn(
     String label,
     double amount,
-    Color color, {
+    Color color,
+    SettingsProvider settings, {
     bool isTotal = false,
   }) {
-    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     return Column(
       children: [
         Text(
@@ -221,7 +225,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          '${isTotal && amount > 0 ? '+' : ''}${currencyFormat.format(amount).replaceAll(',00', '')}',
+          '${isTotal && amount > 0 ? '+' : ''}${settings.formatAmount(amount).replaceAll(',00', '')}',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
@@ -233,7 +237,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   // Widget hiển thị danh sách các giao dịch phát sinh trong riêng ngày được click chọn
-  Widget _buildDayTransactionsList(List<dynamic> allTransactions) {
+  Widget _buildDayTransactionsList(List<dynamic> allTransactions, SettingsProvider settings) {
     final dayTxs = allTransactions
         .where((tx) => isSameDay(tx.date, _selectedDay))
         .toList();
@@ -247,7 +251,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
       );
     }
 
-    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     return ListView.builder(
       itemCount: dayTxs.length,
       padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -267,7 +270,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             trailing: Text(
-              '${isIncome ? '+' : '-'}${currencyFormat.format(tx.amount).replaceAll(',00', '')}',
+              '${isIncome ? '+' : '-'}${settings.formatAmount(tx.amount).replaceAll(',00', '')}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: isIncome ? Colors.blue : Colors.orange.shade800,

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../utils/icon_utils.dart';
 import 'add_transaction_screen.dart';
 import 'widgets/numeric_calculator_keyboard.dart';
@@ -28,8 +29,13 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      setState(() {
+        _amountController.text = settings.convertToDisplay(widget.transaction.amount).toInt().toString();
+      });
+    });
     _transactionType = widget.transaction.type;
-    _amountController.text = widget.transaction.amount.toInt().toString();
     _noteController.text = widget.transaction.note;
     _selectedCategoryId = widget.transaction.categoryId;
     _selectedDate = widget.transaction.date;
@@ -298,14 +304,12 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   }
 
   String _formatAmount(String text) {
-    if (text.isEmpty) return '0';
-    try {
-      final number = double.parse(text);
-      final formatter = NumberFormat('#,###', 'vi_VN');
-      return formatter.format(number);
-    } catch (e) {
-      return text;
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    if (_amountController.text.isEmpty || _amountController.text == '0') {
+      return settings.formatAmount(0);
     }
+    double amount = double.tryParse(_amountController.text) ?? 0;
+    return settings.formatAmount(settings.convertToVND(amount));
   }
 
   Future<void> _updateTransaction() async {
@@ -323,7 +327,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     }
 
     final financeProvider = Provider.of<FinanceProvider>(context, listen: false);
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
     double amount = double.tryParse(_amountController.text) ?? 0;
+    amount = settingsProvider.convertToVND(amount);
     
     final updatedTx = TransactionModel(
       id: widget.transaction.id,
@@ -372,12 +378,13 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   }
 
   void _copyTransaction() {
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddTransactionScreen(
           initialTransaction: TransactionModel(
-            amount: double.tryParse(_amountController.text) ?? 0,
+            amount: settingsProvider.convertToVND(double.tryParse(_amountController.text) ?? 0),
             type: _transactionType,
             categoryId: _selectedCategoryId!,
             date: DateTime.now(),

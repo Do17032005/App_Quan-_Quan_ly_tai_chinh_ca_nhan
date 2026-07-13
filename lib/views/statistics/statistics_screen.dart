@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../providers/finance_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../data/models/category_model.dart';
 import '../../utils/icon_utils.dart';
 import '../transaction/edit_transaction_screen.dart';
@@ -66,6 +67,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     final financeProvider = Provider.of<FinanceProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context);
 
     // 1. Lọc giao dịch theo thời gian được chọn và các bộ lọc bổ sung
     final Map<String, CategoryModel> categoryMap = {
@@ -199,7 +201,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ],
       ),
       body: _isSearching && _searchQuery.isNotEmpty
-          ? _buildSearchResults(filteredTransactions, categoryMap)
+          ? _buildSearchResults(filteredTransactions, categoryMap, settings)
           : Column(
               children: [
                 // Bộ chọn thời gian (Tháng/Năm)
@@ -249,9 +251,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      _buildSummaryItem('Chi tiêu', periodExpense, Colors.red, isNegative: true),
+                      _buildSummaryItem('Chi tiêu', periodExpense, Colors.red, settings, isNegative: true),
                       Container(width: 1, height: 40, color: Colors.grey.shade200),
-                      _buildSummaryItem('Thu nhập', periodIncome, Colors.blue),
+                      _buildSummaryItem('Thu nhập', periodIncome, Colors.blue, settings),
                     ],
                   ),
                 ),
@@ -263,7 +265,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     children: [
                       const Text('Thu chi', style: TextStyle(color: Colors.grey)),
                       Text(
-                        '${periodNet >= 0 ? '+' : ''}${NumberFormat('#,###').format(periodNet)}đ',
+                        '${periodNet >= 0 ? '+' : ''}${settings.formatAmount(periodNet)}',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ],
@@ -385,7 +387,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                     ),
                                     const SizedBox(width: 12),
                                     Text(
-                                      '${NumberFormat('#,###').format(amount)}đ',
+                                      settings.formatAmount(amount),
                                       style: const TextStyle(fontWeight: FontWeight.w600),
                                     ),
                                   ],
@@ -475,7 +477,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           Text(
-                                            '${isIncome ? '+' : '-'}${NumberFormat('#,###').format(tx.amount)}đ',
+                                            '${isIncome ? '+' : '-'}${settings.formatAmount(tx.amount)}',
                                             style: TextStyle(
                                               color: isIncome ? Colors.green : Colors.red,
                                               fontWeight: FontWeight.bold,
@@ -506,7 +508,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildSearchResults(List<dynamic> transactions, Map<String, CategoryModel> categoryMap) {
+  Widget _buildSearchResults(List<dynamic> transactions, Map<String, CategoryModel> categoryMap, SettingsProvider settings) {
     if (transactions.isEmpty) {
       return const Center(child: Text('Không tìm thấy giao dịch nào'));
     }
@@ -544,14 +546,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
               ),
             ),
-            ...txs.map((tx) => _buildTransactionItem(tx, categoryMap)).toList(),
+            ...txs.map((tx) => _buildTransactionItem(tx, categoryMap, settings)).toList(),
           ],
         );
       },
     );
   }
 
-  Widget _buildTransactionItem(dynamic tx, Map<String, CategoryModel> categoryMap) {
+  Widget _buildTransactionItem(dynamic tx, Map<String, CategoryModel> categoryMap, SettingsProvider settings) {
     final category = categoryMap[tx.categoryId] ??
         CategoryModel(
           name: 'Khác',
@@ -609,7 +611,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             Expanded(
               flex: 2,
               child: Text(
-                '${isIncome ? '+' : '-'}${NumberFormat('#,###').format(tx.amount)}đ',
+                '${isIncome ? '+' : '-'}${settings.formatAmount(tx.amount)}',
                 textAlign: TextAlign.end,
                 style: TextStyle(
                   color: isIncome ? Colors.green : Colors.red,
@@ -646,14 +648,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildSummaryItem(String label, double amount, Color color, {bool isNegative = false}) {
+  Widget _buildSummaryItem(String label, double amount, Color color, SettingsProvider settings, {bool isNegative = false}) {
     return Expanded(
       child: Column(
         children: [
           Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
           const SizedBox(height: 4),
           Text(
-            '${isNegative ? '-' : '+'}${NumberFormat('#,###').format(amount)}đ',
+            '${isNegative ? '-' : '+'}${settings.formatAmount(amount)}',
             style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18),
           ),
         ],

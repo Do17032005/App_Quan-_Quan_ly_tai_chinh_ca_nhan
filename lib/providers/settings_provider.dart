@@ -31,11 +31,39 @@ class SettingsProvider with ChangeNotifier {
   TimeOfDay get reminderTime => _reminderTime;
   bool get isBudgetAlertEnabled => _isBudgetAlertEnabled;
 
+  // Tỷ giá cố định
+  static const double exchangeRate = 25000.0;
+
   NumberFormat get currencyFormat {
     if (_currency == 'USD') {
       return NumberFormat.currency(locale: 'en_US', symbol: '\$');
     }
     return NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
+  }
+
+  // Chuyển đổi số tiền VNĐ trong DB sang định dạng chuỗi hiển thị theo tiền tệ
+  String formatAmount(double amountVND) {
+    if (_currency == 'USD') {
+      double amountUSD = amountVND / exchangeRate;
+      return NumberFormat.currency(locale: 'en_US', symbol: '\$').format(amountUSD);
+    }
+    return NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(amountVND);
+  }
+
+  // Chuyển đổi số tiền hiển thị trên UI thành VNĐ để lưu vào DB
+  double convertToVND(double displayAmount) {
+    if (_currency == 'USD') {
+      return displayAmount * exchangeRate;
+    }
+    return displayAmount;
+  }
+
+  // Chuyển số tiền VNĐ trong DB sang số để gán vào các ô nhập liệu
+  double convertToDisplay(double amountVND) {
+    if (_currency == 'USD') {
+      return amountVND / exchangeRate;
+    }
+    return amountVND;
   }
 
   // === KHỞI TẠO ===

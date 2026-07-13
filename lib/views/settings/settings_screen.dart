@@ -89,7 +89,7 @@ class SettingsScreen extends StatelessWidget {
                 title: Text(l10n.budgetLimit),
                 subtitle: Text(
                   settings.budgetLimit > 0
-                      ? 'Đang bật: ${settings.budgetLimit.toStringAsFixed(0)} ${settings.currency}'
+                      ? 'Đang bật: ${settings.formatAmount(settings.budgetLimit)}'
                       : 'Không giới hạn',
                 ),
                 trailing: const Icon(Icons.edit, size: 18),
@@ -136,7 +136,7 @@ class SettingsScreen extends StatelessWidget {
   void _showBudgetDialog(BuildContext context, SettingsProvider settings) {
     final TextEditingController controller = TextEditingController(
       text: settings.budgetLimit > 0
-          ? settings.budgetLimit.toStringAsFixed(0)
+          ? settings.convertToDisplay(settings.budgetLimit).toInt().toString()
           : '',
     );
     showDialog(
@@ -159,7 +159,7 @@ class SettingsScreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               final val = double.tryParse(controller.text) ?? 0.0;
-              settings.setBudgetLimit(val);
+              settings.setBudgetLimit(settings.convertToVND(val));
               Navigator.pop(context);
             },
             child: const Text('Lưu'),
