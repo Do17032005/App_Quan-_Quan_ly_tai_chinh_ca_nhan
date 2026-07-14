@@ -3,7 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/category_model.dart';
-import '../../providers/auth_provider.dart';
+
 import '../../providers/finance_provider.dart';
 import '../../utils/icon_utils.dart';
 import '../calendar/calendar_screen.dart';

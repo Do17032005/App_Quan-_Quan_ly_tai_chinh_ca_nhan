@@ -18,6 +18,11 @@ class CategoryManagementScreen extends StatefulWidget {
 class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   late String _currentType;
 
+  // Tìm kiếm
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -25,57 +30,116 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final provider = Provider.of<FinanceProvider>(context);
-    final categories = provider.categories.where((c) => c.type == _currentType).toList();
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Lọc danh mục theo loại và tìm kiếm
+    final categories = provider.categories.where((c) {
+      final isCorrectType = c.type == _currentType;
+      if (!_isSearching || _searchQuery.isEmpty) return isCorrectType;
+      
+      final nameMatch = c.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      return isCorrectType && nameMatch;
+    }).toList();
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.lightBlueAccent),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTypeTab(AppLocalizations.of(context)?.expense ?? 'Chi tiêu', 'expense'),
-              _buildTypeTab(AppLocalizations.of(context)?.income ?? 'Thu nhập', 'income'),
-            ],
-          ),
-        ),
+        leading: _isSearching
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.lightBlueAccent),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchQuery = '';
+                    _searchController.clear();
+                  });
+                },
+              )
+            : IconButton(
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.lightBlueAccent),
+                onPressed: () => Navigator.pop(context),
+              ),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: l10n.searchHint,
+                  border: InputBorder.none,
+                ),
+                style: const TextStyle(fontSize: 16),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTypeTab(l10n.expense, 'expense'),
+                    _buildTypeTab(l10n.income, 'income'),
+                  ],
+                ),
+              ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.lightBlueAccent),
+            onPressed: () {
+              setState(() {
+                if (_isSearching) {
+                  _searchQuery = '';
+                  _searchController.clear();
+                  _isSearching = false;
+                } else {
+                  _isSearching = true;
+                }
+              });
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
-          const SizedBox(height: 16),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+          if (!_isSearching) ...[
+            const SizedBox(height: 16),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.add, color: Colors.grey),
+                title: Text(l10n.addCategory, style: const TextStyle(color: Colors.grey)),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditCategoryScreen(initialType: _currentType),
+                    ),
+                  );
+                },
+              ),
             ),
-            child: ListTile(
-              leading: const Icon(Icons.add, color: Colors.grey),
-              title: Text(AppLocalizations.of(context)?.addCategory ?? 'Thêm danh mục', style: const TextStyle(color: Colors.grey)),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditCategoryScreen(initialType: _currentType),
-                  ),
-                );
-              },
-            ),
-          ),
+          ],
           const SizedBox(height: 16),
           Expanded(
             child: Container(
