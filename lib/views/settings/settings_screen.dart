@@ -71,13 +71,13 @@ class SettingsScreen extends StatelessWidget {
               ),
               ListTile(
                 leading: Icon(Icons.calendar_today, color: Colors.blue.shade600),
-                title: const Text('Ngày bắt đầu tháng'),
+                title: Text(l10n.startOfMonth),
                 trailing: DropdownButton<int>(
                   value: settings.startOfMonth,
                   items: List.generate(28, (index) {
                     return DropdownMenuItem(
                       value: index + 1,
-                      child: Text('Ngày ${index + 1}'),
+                      child: Text('${l10n.dayPrefix} ${index + 1}'),
                     );
                   }),
                   onChanged: (value) {
@@ -90,8 +90,8 @@ class SettingsScreen extends StatelessWidget {
                 title: Text(l10n.budgetLimit),
                 subtitle: Text(
                   settings.budgetLimit > 0
-                      ? 'Đang bật: ${settings.formatAmount(settings.budgetLimit)}'
-                      : 'Không giới hạn',
+                      ? '${l10n.active}: ${settings.formatAmount(settings.budgetLimit)}'
+                      : l10n.unlimited,
                 ),
                 trailing: const Icon(Icons.edit, size: 18),
                 onTap: () {
@@ -104,25 +104,27 @@ class SettingsScreen extends StatelessWidget {
               _SectionHeader(title: l10n.notifications),
               SwitchListTile(
                 title: Text(l10n.dailyReminder),
-                subtitle: Text('Lúc ${settings.reminderTime.format(context)}'),
+                subtitle: Text(l10n.atTime(settings.reminderTime.format(context))),
                 secondary: Icon(Icons.notifications_active, color: Colors.blue.shade600),
                 value: settings.isReminderEnabled,
                 onChanged: (value) async {
-                  await settings.toggleReminder(value);
-                  if (value && context.mounted) {
+                  if (value) {
                     final time = await showTimePicker(
                       context: context,
                       initialTime: settings.reminderTime,
                     );
                     if (time != null) {
-                      settings.setReminderTime(time);
+                      await settings.setReminderTime(time);
+                      await settings.toggleReminder(true);
                     }
+                  } else {
+                    await settings.toggleReminder(false);
                   }
                 },
               ),
               SwitchListTile(
-                title: const Text('Cảnh báo vượt hạn mức'),
-                subtitle: const Text('Thông báo khi chi tiêu vượt ngân sách'),
+                title: Text(l10n.budgetAlert),
+                subtitle: Text(l10n.budgetAlertDesc),
                 secondary: Icon(Icons.warning_amber, color: Colors.blue.shade600),
                 value: settings.isBudgetAlertEnabled,
                 onChanged: (value) => settings.toggleBudgetAlert(value),
@@ -132,24 +134,24 @@ class SettingsScreen extends StatelessWidget {
               // --- TÀI KHOẢN ---
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text(
-                  'Đăng xuất',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                title: Text(
+                  l10n.logout,
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                 ),
                 onTap: () async {
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Đăng xuất'),
-                      content: const Text('Bạn có chắc chắn muốn đăng xuất không?'),
+                      title: Text(l10n.logout),
+                      content: Text(l10n.logoutConfirm),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Hủy'),
+                          child: Text(l10n.cancel),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
+                          child: Text(l10n.logout, style: const TextStyle(color: Colors.red)),
                         ),
                       ],
                     ),
@@ -168,6 +170,7 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _showBudgetDialog(BuildContext context, SettingsProvider settings) {
+    final l10n = AppLocalizations.of(context)!;
     final TextEditingController controller = TextEditingController(
       text: settings.budgetLimit > 0
           ? settings.convertToDisplay(settings.budgetLimit).toInt().toString()
@@ -176,19 +179,19 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Thiết lập hạn mức chi tiêu'),
+        title: Text(l10n.setBudgetLimit),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
-            hintText: 'Nhập số tiền (ví dụ: 10000000)',
+            hintText: l10n.enterAmount,
             suffixText: settings.currency,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -196,7 +199,7 @@ class SettingsScreen extends StatelessWidget {
               settings.setBudgetLimit(settings.convertToVND(val));
               Navigator.pop(context);
             },
-            child: const Text('Lưu'),
+            child: Text(l10n.save),
           ),
         ],
       ),

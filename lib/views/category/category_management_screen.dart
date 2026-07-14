@@ -1,3 +1,4 @@
+import 'package:app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -45,18 +46,12 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildTypeTab('Chi tiêu', 'expense'),
-              _buildTypeTab('Thu nhập', 'income'),
+              _buildTypeTab(AppLocalizations.of(context)?.expense ?? 'Chi tiêu', 'expense'),
+              _buildTypeTab(AppLocalizations.of(context)?.income ?? 'Thu nhập', 'income'),
             ],
           ),
         ),
         centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: const Text('Chỉnh sửa', style: TextStyle(color: Colors.lightBlueAccent)),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -69,7 +64,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             ),
             child: ListTile(
               leading: const Icon(Icons.add, color: Colors.grey),
-              title: const Text('Thêm danh mục', style: TextStyle(color: Colors.grey)),
+              title: Text(AppLocalizations.of(context)?.addCategory ?? 'Thêm danh mục', style: const TextStyle(color: Colors.grey)),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
               onTap: () {
                 Navigator.push(
@@ -114,7 +109,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                           icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                           onPressed: () => _showDeleteConfirmation(context, provider, cat),
                         )
-                      : const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                      : null, // Danh mục mặc định
                     onTap: () {
                       if (isCustom) {
                         Navigator.push(
@@ -136,15 +131,16 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   }
 
   void _showDeleteConfirmation(BuildContext context, FinanceProvider provider, CategoryModel category) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xác nhận xóa'),
-        content: Text('Bạn có chắc chắn muốn xóa danh mục "${category.name}" không?'),
+        title: Text(l10n?.confirmDelete ?? 'Xác nhận xóa'),
+        content: Text(l10n?.confirmDeleteCategory(category.name) ?? 'Bạn có chắc chắn muốn xóa danh mục "${category.name}" không?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+            child: Text(l10n?.cancel ?? 'Hủy'),
           ),
           TextButton(
             onPressed: () async {
@@ -160,7 +156,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                         children: [
                           const Icon(Icons.delete_sweep, color: Colors.white),
                           const SizedBox(width: 12),
-                          Text('Đã xóa danh mục ${category.name}'),
+                          Text(l10n?.categoryDeleted(category.name) ?? 'Đã xóa danh mục ${category.name}'),
                         ],
                       ),
                       backgroundColor: Colors.redAccent,
@@ -172,7 +168,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                 }
               }
             },
-            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+            child: Text(l10n?.delete ?? 'Xóa', style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),

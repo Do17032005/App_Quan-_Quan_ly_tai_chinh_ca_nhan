@@ -20,6 +20,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await initializeDateFormatting('vi_VN', null);
+  await initializeDateFormatting('en_US', null);
   
   // Khởi tạo NotificationService
   await NotificationService().init();

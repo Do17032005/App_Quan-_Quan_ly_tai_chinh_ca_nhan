@@ -23,10 +23,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
+  // Tìm kiếm
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
+    // Đảm bảo có đủ dữ liệu cho việc hiển thị marker và tìm kiếm
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<FinanceProvider>(context, listen: false).fetchAllTransactionsForStats();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -34,7 +49,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final financeProvider = Provider.of<FinanceProvider>(context);
     final settings = Provider.of<SettingsProvider>(context);
     final l10n = AppLocalizations.of(context)!;
-    final allTransactions = financeProvider.transactions;
+    // Sử dụng statsTransactions để có đầy đủ dữ liệu cho markers và tìm kiếm
+    final allTransactions = financeProvider.statsTransactions;
+
+    final categoryMap = {
+      for (var cat in financeProvider.categories) cat.id ?? '': cat
+    };
+
+    // Lọc giao dịch nếu đang tìm kiếm
+    final List<TransactionModel> filteredTransactions = (_isSearching && _searchQuery.isNotEmpty)
+        ? allTransactions.where((tx) {
+            final noteMatch = tx.note.toLowerCase().contains(_searchQuery.toLowerCase());
+            final catMatch = (categoryMap[tx.categoryId]?.name ?? l10n.other)
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase());
+            return noteMatch || catMatch;
+          }).toList()
+        : <TransactionModel>[];
 
     // --- LOGIC LỌC DỮ LIỆU THEO THÁNG ĐANG XEM ---
     final currentMonthTxs = allTransactions.where((tx) {
@@ -57,17 +88,62 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: Text(
-          l10n.calendar,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: l10n.searchHint,
+                  border: InputBorder.none,
+                ),
+                style: const TextStyle(fontSize: 16),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              )
+            : Text(
+                l10n.calendar,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0.5,
         foregroundColor: Colors.black,
+        leading: _isSearching
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.blue),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchQuery = '';
+                    _searchController.clear();
+                  });
+                },
+              )
+            : null,
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.blue),
+            onPressed: () {
+              setState(() {
+                if (_isSearching) {
+                  _searchQuery = '';
+                  _searchController.clear();
+                  _isSearching = false;
+                } else {
+                  _isSearching = true;
+                }
+              });
+            },
+          ),
+        ],
       ),
-      body: Column(
-        children: [
+      body: _isSearching && _searchQuery.isNotEmpty
+          ? _buildSearchResults(filteredTransactions, categoryMap, settings, l10n)
+          : Column(
+              children: [
           // 1. KHU VỰC BẢNG LỊCH (TABLE CALENDAR)
           Container(
             color: Colors.white,
@@ -100,9 +176,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 titleCentered: true,
                 formatButtonVisible: false,
                 titleTextFormatter: (date, locale) =>
-                    settings.locale.languageCode == 'vi'
-                        ? 'Tháng ${DateFormat('MM/yyyy').format(date)}'
-                        : DateFormat.yMMMM(locale).format(date),
+            DateFormat.yMMMM(locale).format(date),
                 titleTextStyle: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -237,6 +311,130 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  Widget _buildSearchResults(List<TransactionModel> transactions, Map<String, CategoryModel> categoryMap, SettingsProvider settings, AppLocalizations l10n) {
+    if (transactions.isEmpty) {
+      return Center(child: Text(l10n.noResults));
+    }
+
+    // Nhóm giao dịch theo ngày
+    Map<String, List<TransactionModel>> grouped = {};
+    for (var tx in transactions) {
+      String dateStr = DateFormat.yMd(Localizations.localeOf(context).toString()).format(tx.date);
+      if (grouped[dateStr] == null) grouped[dateStr] = [];
+      grouped[dateStr]!.add(tx);
+    }
+
+    var sortedDates = grouped.keys.toList()
+      ..sort((a, b) => DateFormat.yMd(Localizations.localeOf(context).toString()).parse(b).compareTo(DateFormat.yMd(Localizations.localeOf(context).toString()).parse(a)));
+
+    return ListView.builder(
+      itemCount: sortedDates.length,
+      itemBuilder: (context, index) {
+        String date = sortedDates[index];
+        List<TransactionModel> txs = grouped[date]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Colors.grey.shade100,
+              child: Text(
+                date,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            ...txs.map((tx) => _buildTransactionItem(tx, categoryMap, settings, l10n)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTransactionItem(TransactionModel tx, Map<String, CategoryModel> categoryMap, SettingsProvider settings, AppLocalizations l10n) {
+    final category = categoryMap[tx.categoryId] ??
+        CategoryModel(
+          id: 'other',
+          name: l10n.other,
+          type: tx.type,
+          iconName: 'category',
+          colorValue: 0xFF9E9E9E,
+        );
+    final isIncome = tx.type == 'income';
+
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EditTransactionScreen(transaction: tx),
+          ),
+        );
+        // Cập nhật lại dữ liệu sau khi chỉnh sửa
+        if (mounted) {
+          Provider.of<FinanceProvider>(context, listen: false).fetchAllTransactionsForStats();
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: Color(category.colorValue).withOpacity(0.1),
+              radius: 18,
+              child: FaIcon(
+                IconUtils.getIconData(category.iconName),
+                color: Color(category.colorValue),
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  if (tx.note.isNotEmpty)
+                    Text(
+                      tx.note,
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                '${isIncome ? '+' : '-'}${settings.formatAmount(tx.amount)}',
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  color: isIncome ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDayTransactionsList(
       List<TransactionModel> allTransactions, 
       SettingsProvider settings, 
@@ -265,7 +463,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           (cat) => cat.id == tx.categoryId,
           orElse: () => CategoryModel(
             id: '',
-            name: 'Khác',
+            name: l10n.other,
             type: tx.type,
             iconName: 'question',
             colorValue: 0xFF9E9E9E,

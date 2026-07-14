@@ -1,3 +1,4 @@
+import 'package:app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -27,6 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
@@ -42,16 +44,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Tạo Tài Khoản',
+                Text(
+                  l10n.createAccount,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Bắt đầu hành trình quản lý tài chính thông minh',
+                Text(
+                  l10n.registerSubtitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
+                  style: const TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 32),
 
@@ -68,7 +70,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Vui lòng nhập Email';
+                      return l10n.pleaseEnterEmail;
+                    }
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
+                      return l10n.invalidEmail;
                     }
                     return null;
                   },
@@ -80,7 +87,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Mật khẩu',
+                    labelText: l10n.password,
                     prefixIcon: const Icon(Icons.lock),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -88,10 +95,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Vui lòng nhập mật khẩu';
+                      return l10n.pleaseEnterPassword;
                     }
                     if (value.length < 6) {
-                      return 'Mật khẩu phải từ 6 ký tự trở lên';
+                      return l10n.passwordTooShort;
                     }
                     return null;
                   },
@@ -103,15 +110,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _confirmPasswordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Xác nhận mật khẩu',
+                    labelText: l10n.confirmPassword,
                     prefixIcon: const Icon(Icons.lock_clock),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return l10n.pleaseConfirmPassword;
+                    }
                     if (value != _passwordController.text) {
-                      return 'Mật khẩu xác nhận không khớp';
+                      return l10n.passwordsDoNotMatch;
                     }
                     return null;
                   },
@@ -165,10 +175,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               } else {
                                 // Đăng ký thành công và chưa tồn tại tài khoản trùng
                                 messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Tạo tài khoản thành công! Hãy đăng nhập.',
-                                    ),
+                                  SnackBar(
+                                    content: Text(l10n.registerSuccess),
                                     backgroundColor: Colors.green,
                                     behavior: SnackBarBehavior.floating,
                                   ),
@@ -186,9 +194,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'ĐĂNG KÝ NGAY',
-                            style: TextStyle(
+                        : Text(
+                            l10n.register.toUpperCase(),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),

@@ -22,5 +22,140 @@
   "dailyReminder": "Nhắc nhở hàng ngày",
   "language": "Ngôn ngữ",
   "calendar": "Lịch",
-  "total": "Tổng cộng"
+  "total": "Tổng cộng",
+  "startOfMonth": "Ngày bắt đầu tháng",
+  "dayPrefix": "Ngày",
+  "detailedTransactions": "Giao dịch chi tiết",
+  "monthly": "Hàng Tháng",
+  "yearly": "Hàng Năm",
+  "searchHint": "Tìm kiếm ghi chú, danh mục...",
+  "netBalance": "Thu chi",
+  "noData": "Không có dữ liệu {type}",
+  "@noData": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "other": "Khác",
+  "noResults": "Không tìm thấy giao dịch nào",
+  "filterDetails": "Bộ lọc chi tiết",
+  "reset": "Đặt lại",
+  "category": "Danh mục",
+  "all": "Tất cả",
+  "amountRange": "Khoảng giá",
+  "from": "Từ",
+  "to": "Đến",
+  "apply": "Áp dụng",
+  "budgetAlert": "Cảnh báo vượt hạn mức",
+  "budgetAlertDesc": "Thông báo khi chi tiêu vượt ngân sách",
+  "logout": "Đăng xuất",
+  "logoutConfirm": "Bạn có chắc chắn muốn đăng xuất không?",
+  "cancel": "Hủy",
+  "save": "Lưu",
+  "setBudgetLimit": "Thiết lập hạn mức chi tiêu",
+  "enterAmount": "Nhập số tiền (ví dụ: 10000000)",
+  "active": "Đang bật",
+  "unlimited": "Không giới hạn",
+  "editExpense": "Sửa khoản chi",
+  "editIncome": "Sửa khoản thu",
+  "copy": "Sao chép",
+  "confirmDeleteTransaction": "Bạn có chắc chắn muốn xóa giao dịch này không?",
+  "saveChanges": "Lưu thay đổi",
+  "enterNote": "Nhập ghi chú",
+  "date": "Ngày",
+  "note": "Ghi chú",
+  "noteHintExpense": "Nhập ghi chú cho khoản chi này...",
+  "noteHintIncome": "Nhập ghi chú cho khoản thu này...",
+  "enterExpense": "Nhập khoản chi",
+  "enterIncome": "Nhập khoản thu",
+  "pleaseEnterAmount": "Vui lòng nhập số tiền",
+  "pleaseSelectCategory": "Vui lòng chọn danh mục",
+  "budgetWarning": "Cảnh báo ngân sách",
+  "budgetWarningDesc": "Khoản chi này sẽ làm tổng chi tiêu vượt hạn mức ({limit}). Bạn có chắc chắn muốn tiếp tục?",
+  "@budgetWarningDesc": {
+    "placeholders": {
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "continueText": "Tiếp tục",
+  "addCategory": "Thêm danh mục",
+  "confirmDelete": "Xác nhận xóa",
+  "confirmDeleteCategory": "Bạn có chắc chắn muốn xóa danh mục \"{name}\" không?",
+  "@confirmDeleteCategory": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "delete": "Xóa",
+  "categoryDeleted": "Đã xóa danh mục \"{name}\"",
+  "@categoryDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createNew": "Tạo mới",
+  "editCategory": "Chỉnh sửa danh mục",
+  "name": "Tên",
+  "enterCategoryName": "Vui lòng nhập vào tên đề mục",
+  "icons": "Biểu tượng",
+  "colors": "Màu sắc",
+  "categoryExists": "Tên danh mục này đã tồn tại",
+  "categoryAdded": "Đã thêm danh mục \"{name}\"",
+  "@categoryAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryUpdated": "Đã cập nhật danh mục \"{name}\"",
+  "@categoryUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "monday": "Thứ Hai",
+  "tuesday": "Thứ Ba",
+  "wednesday": "Thứ Tư",
+  "thursday": "Thứ Năm",
+  "friday": "Thứ Sáu",
+  "saturday": "Thứ Bảy",
+  "sunday": "Chủ Nhật",
+  "transactionDeleted": "Đã xóa dữ liệu",
+  "transactionUpdated": "Đã chỉnh sửa dữ liệu",
+  "transactionAdded": "Đã thêm dữ liệu",
+  "password": "Mật khẩu",
+  "edit": "Chỉnh sửa",
+  "welcomeBack": "Chào Mừng Trở Lại",
+  "loginSubtitle": "Đăng nhập để tiếp tục quản lý thu chi",
+  "login": "Đăng nhập",
+  "noAccount": "Chưa có tài khoản? ",
+  "registerNow": "Đăng ký ngay",
+  "pleaseEnterEmail": "Vui lòng nhập Email",
+  "invalidEmail": "Định dạng Email không hợp lệ",
+  "pleaseEnterPassword": "Vui lòng nhập mật khẩu",
+  "passwordTooShort": "Mật khẩu phải từ 6 ký tự trở lên",
+  "loginSuccess": "Đăng nhập thành công!",
+  "register": "Đăng ký",
+  "createAccount": "Tạo tài khoản",
+  "registerSubtitle": "Bắt đầu quản lý tài chính ngay hôm nay",
+  "fullName": "Họ và tên",
+  "pleaseEnterFullName": "Vui lòng nhập họ tên",
+  "confirmPassword": "Xác nhận mật khẩu",
+  "pleaseConfirmPassword": "Vui lòng xác nhận mật khẩu",
+  "passwordsDoNotMatch": "Mật khẩu không khớp",
+  "alreadyHaveAccount": "Đã có tài khoản? ",
+  "loginNow": "Đăng nhập ngay",
+  "registerSuccess": "Đăng ký thành công!",
+  "atTime": "Lúc {time}"
 }

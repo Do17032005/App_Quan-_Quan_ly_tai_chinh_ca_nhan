@@ -318,7 +318,25 @@ class FinanceProvider with ChangeNotifier {
       final Map<String, dynamic> txMap = transaction.toMap();
       txMap['user_id'] = currentUser.uid;
 
-      await _transactionCollection.add(txMap);
+      final docRef = await _transactionCollection.add(txMap);
+
+      // Cập nhật statsTransactions nếu đã được load để StatisticsScreen cập nhật tức thì
+      if (_statsTransactions.isNotEmpty) {
+        final newTx = TransactionModel(
+          id: docRef.id.hashCode,
+          documentId: docRef.id,
+          amount: transaction.amount,
+          type: transaction.type,
+          categoryId: transaction.categoryId,
+          date: transaction.date,
+          note: transaction.note,
+        );
+        final newList = List<TransactionModel>.from(_statsTransactions);
+        newList.insert(0, newTx);
+        newList.sort((a, b) => b.date.compareTo(a.date));
+        _statsTransactions = newList;
+        notifyListeners();
+      }
     } catch (e) {
       developer.log("Lỗi khi thêm dữ liệu phân quyền lên Firebase", error: e);
     }
@@ -376,7 +394,13 @@ class FinanceProvider with ChangeNotifier {
   Future<void> deleteTransaction(String documentId) async {
     try {
       await _transactionCollection.doc(documentId).delete();
-      // Không cần gọi notifyListeners() vì listenToTransactions() đang lắng nghe realtime sẽ tự cập nhật
+      // Cập nhật statsTransactions nếu đã được load
+      if (_statsTransactions.isNotEmpty) {
+        final newList = List<TransactionModel>.from(_statsTransactions);
+        newList.removeWhere((tx) => tx.documentId == documentId);
+        _statsTransactions = newList;
+        notifyListeners();
+      }
     } catch (e) {
       developer.log("Lỗi khi xóa giao dịch", error: e);
     }
@@ -395,6 +419,19 @@ class FinanceProvider with ChangeNotifier {
       txMap['user_id'] = currentUser.uid;
 
       await _transactionCollection.doc(documentId).update(txMap);
+
+      // Cập nhật statsTransactions nếu đã được load
+      if (_statsTransactions.isNotEmpty) {
+        final newList = List<TransactionModel>.from(_statsTransactions);
+        final index = newList.indexWhere((tx) => tx.documentId == documentId);
+        if (index != -1) {
+          newList[index] = updatedTx;
+          // Có thể ngày đã thay đổi nên cần sort lại
+          newList.sort((a, b) => b.date.compareTo(a.date));
+          _statsTransactions = newList;
+          notifyListeners();
+        }
+      }
     } catch (e) {
       developer.log("Lỗi khi cập nhật giao dịch", error: e);
     }

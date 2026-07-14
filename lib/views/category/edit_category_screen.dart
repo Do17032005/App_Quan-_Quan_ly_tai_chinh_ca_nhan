@@ -1,3 +1,4 @@
+import 'package:app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -50,10 +51,11 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(widget.category == null ? 'Tạo mới' : 'Chỉnh sửa'),
+        title: Text(widget.category == null ? (l10n?.createNew ?? 'Tạo mới') : (l10n?.editCategory ?? 'Chỉnh sửa danh mục')),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -69,13 +71,13 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                 children: [
                   Row(
                     children: [
-                      const Text('Tên', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(l10n?.name ?? 'Tên', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(width: 20),
                       Expanded(
                         child: TextField(
                           controller: _nameController,
-                          decoration: const InputDecoration(
-                            hintText: 'Vui lòng nhập vào tên đề mục',
+                          decoration: InputDecoration(
+                            hintText: l10n?.enterCategoryName ?? 'Vui lòng nhập vào tên đề mục',
                             border: InputBorder.none,
                           ),
                         ),
@@ -84,7 +86,7 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                   ),
                   const Divider(),
                   const SizedBox(height: 16),
-                  const Text('Biểu tượng', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(l10n?.icons ?? 'Biểu tượng', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Expanded(
                     flex: 3,
@@ -133,7 +135,7 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text('Màu sắc', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(l10n?.colors ?? 'Màu sắc', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Expanded(
                     flex: 2,
@@ -198,7 +200,7 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                   if (name.isEmpty) {
                     messenger.showSnackBar(
                       SnackBar(
-                        content: const Text('Vui lòng nhập tên danh mục'),
+                        content: Text(l10n?.enterCategoryName ?? 'Vui lòng nhập tên danh mục'),
                         backgroundColor: Colors.orangeAccent,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -219,7 +221,7 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                   if (existingCategory.isNotEmpty) {
                     messenger.showSnackBar(
                       SnackBar(
-                        content: const Text('Tên danh mục này đã tồn tại'),
+                        content: Text(l10n?.categoryExists ?? 'Tên danh mục này đã tồn tại'),
                         backgroundColor: Colors.redAccent,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -241,7 +243,7 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                           children: [
                             const Icon(Icons.check_circle_outline, color: Colors.white),
                             const SizedBox(width: 12),
-                            Text('Đã thêm danh mục "$name"'),
+                            Text(l10n?.categoryAdded(name) ?? 'Đã thêm danh mục "$name"'),
                           ],
                         ),
                         backgroundColor: Colors.green,
@@ -265,7 +267,7 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                           children: [
                             const Icon(Icons.edit_note, color: Colors.white),
                             const SizedBox(width: 12),
-                            Text('Đã cập nhật danh mục "$name"'),
+                            Text(l10n?.categoryUpdated(name) ?? 'Đã cập nhật danh mục "$name"'),
                           ],
                         ),
                         backgroundColor: Colors.blueAccent,
@@ -281,7 +283,7 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                   backgroundColor: Colors.lightBlueAccent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                 ),
-                child: const Text('Lưu', style: TextStyle(color: Colors.white, fontSize: 18)),
+                child: Text(l10n?.save ?? 'Lưu', style: const TextStyle(color: Colors.white, fontSize: 18)),
               ),
             ),
           ),

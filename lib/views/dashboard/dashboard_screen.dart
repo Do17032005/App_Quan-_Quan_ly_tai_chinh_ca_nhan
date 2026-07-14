@@ -75,18 +75,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         selectedItemColor: Colors.blue.shade700,
         unselectedItemColor: Colors.grey,
         items: [
-          BottomNavigationBarItem(icon: const Icon(Icons.home), label: AppLocalizations.of(context)?.dashboard ?? 'Trang chủ'),
+          BottomNavigationBarItem(icon: const Icon(Icons.home), label: AppLocalizations.of(context)!.dashboard),
           BottomNavigationBarItem(
             icon: const Icon(Icons.pie_chart),
-            label: AppLocalizations.of(context)?.statistics ?? 'Thống kê',
+            label: AppLocalizations.of(context)!.statistics,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: 'Lịch', // Có thể thêm vào arb sau
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.calendar_month),
+            label: AppLocalizations.of(context)!.calendar,
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.settings),
-            label: AppLocalizations.of(context)?.settings ?? 'Cài đặt',
+            label: AppLocalizations.of(context)!.settings,
           ),
         ],
       ),
@@ -106,7 +106,7 @@ class DashboardHomeContent extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          AppLocalizations.of(context)?.appTitle ?? 'Quản Lý Thu Chi',
+          AppLocalizations.of(context)!.appTitle,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -144,12 +144,12 @@ class DashboardHomeContent extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      AppLocalizations.of(context)?.recentTransactions ?? 'Giao dịch gần đây',
+                      AppLocalizations.of(context)!.recentTransactions,
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     TextButton(
                       onPressed: onSeeAll,
-                      child: Text(AppLocalizations.of(context)?.viewAll ?? 'Xem tất cả'),
+                      child: Text(AppLocalizations.of(context)!.viewAll),
                     ),
                   ],
                 ),
@@ -160,7 +160,7 @@ class DashboardHomeContent extends StatelessWidget {
                   child: recentTransactions.isEmpty
                       ? Center(
                           child: Text(
-                            AppLocalizations.of(context)?.noTransactions ?? 'Chưa có giao dịch nào.',
+                            AppLocalizations.of(context)!.noTransactions,
                             textAlign: TextAlign.center,
                             style: const TextStyle(color: Colors.grey, fontSize: 16),
                           ),
@@ -170,9 +170,10 @@ class DashboardHomeContent extends StatelessWidget {
                           itemCount: recentTransactions.length,
                           itemBuilder: (context, index) {
                             final tx = recentTransactions[index];
+                            final l10n = AppLocalizations.of(context)!;
                             final category = categoryMap[tx.categoryId] ?? CategoryModel(
                                 id: '0',
-                                name: 'Khác',
+                                name: l10n.other,
                                 type: 'expense',
                                 iconName: 'help',
                                 colorValue: 0xFF9E9E9E,
@@ -199,22 +200,22 @@ class DashboardHomeContent extends StatelessWidget {
                                 return await showDialog<bool>(
                                   context: context,
                                   builder: (context) => AlertDialog(
-                                    title: const Text('Xác nhận xóa'),
-                                    content: const Text(
-                                      'Bạn có chắc chắn muốn xóa giao dịch này không?',
+                                    title: Text(l10n.confirmDelete),
+                                    content: Text(
+                                      l10n.confirmDeleteTransaction,
                                     ),
                                     actions: [
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.of(context).pop(false),
-                                        child: const Text('Hủy'),
+                                        child: Text(l10n.cancel),
                                       ),
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.of(context).pop(true),
-                                        child: const Text(
-                                          'Xóa',
-                                          style: TextStyle(color: Colors.red),
+                                        child: Text(
+                                          l10n.delete,
+                                          style: const TextStyle(color: Colors.red),
                                         ),
                                       ),
                                     ],
@@ -235,7 +236,7 @@ class DashboardHomeContent extends StatelessWidget {
                                         children: [
                                           const Icon(Icons.delete_sweep, color: Colors.white),
                                           const SizedBox(width: 12),
-                                          const Text('Đã xóa giao dịch'),
+                                          Text(l10n.transactionDeleted),
                                         ],
                                       ),
                                       backgroundColor: Colors.redAccent,
@@ -280,13 +281,7 @@ class DashboardHomeContent extends StatelessWidget {
                                         backgroundColor: Color(
                                           category.colorValue,
                                         ).withOpacity(0.1),
-                                        child: FaIcon(
-                                          IconUtils.getIconData(
-                                            category.iconName,
-                                          ),
-                                          color: Color(category.colorValue),
-                                          size: 20,
-                                        ),
+                                        child: _buildCategoryIcon(category),
                                       ),
                                       const SizedBox(width: 12),
                                       // Phần thân: Tên danh mục và Ghi chú
@@ -339,9 +334,7 @@ class DashboardHomeContent extends StatelessWidget {
                                               ),
                                             ),
                                             Text(
-                                              DateFormat(
-                                                'dd/MM HH:mm',
-                                              ).format(tx.date),
+                                              DateFormat.MMMd(Localizations.localeOf(context).toString()).add_Hm().format(tx.date),
                                               style: const TextStyle(
                                                 fontSize: 11,
                                                 color: Colors.grey,
@@ -364,5 +357,22 @@ class DashboardHomeContent extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Widget _buildCategoryIcon(CategoryModel category) {
+    final iconData = IconUtils.getIconData(category.iconName);
+    if (iconData is FaIconData) {
+      return FaIcon(
+        iconData,
+        color: Color(category.colorValue),
+        size: 20,
+      );
+    } else {
+      return Icon(
+        iconData as IconData,
+        color: Color(category.colorValue),
+        size: 20,
+      );
+    }
   }
 }
