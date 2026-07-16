@@ -8,16 +8,15 @@ class BalanceCard extends StatelessWidget {
   final double totalExpense;
 
   const BalanceCard({
-    Key? key,
+    super.key,
     required this.totalIncome,
     required this.totalExpense,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final double balance = totalIncome - totalExpense;
-    final currencyFormat = settings.currencyFormat;
     final isHidden = settings.isBalanceHidden;
 
     return Card(
@@ -48,7 +47,7 @@ class BalanceCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  AppLocalizations.of(context)?.totalBalance ?? "Số dư hiện tại",
+                  AppLocalizations.of(context)!.totalBalance,
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 16,
@@ -89,7 +88,7 @@ class BalanceCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)?.income ?? 'Thu nhập',
+                          AppLocalizations.of(context)!.income,
                           style: const TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
@@ -106,13 +105,16 @@ class BalanceCard extends StatelessWidget {
                 // Chi tiêu
                 Row(
                   children: [
-                    const Icon(Icons.arrow_upward, color: Colors.redAccent),
+                    Icon(
+                      Icons.arrow_upward,
+                      color: balance >= 0 ? Colors.redAccent : Colors.yellowAccent,
+                    ),
                     const SizedBox(width: 8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)?.expense ?? 'Chi tiêu',
+                          AppLocalizations.of(context)!.expense,
                           style: const TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(

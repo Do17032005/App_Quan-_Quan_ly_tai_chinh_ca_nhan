@@ -1,6 +1,8 @@
+import 'package:app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
@@ -11,7 +13,7 @@ import 'widgets/numeric_calculator_keyboard.dart';
 
 class EditTransactionScreen extends StatefulWidget {
   final TransactionModel transaction;
-  const EditTransactionScreen({Key? key, required this.transaction}) : super(key: key);
+  const EditTransactionScreen({super.key, required this.transaction});
 
   @override
   State<EditTransactionScreen> createState() => _EditTransactionScreenState();
@@ -70,7 +72,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final financeProvider = Provider.of<FinanceProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context);
     List<CategoryModel> filteredCategories = financeProvider.categories
         .where((cat) => cat.type == _transactionType)
         .toList();
@@ -85,7 +89,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          _transactionType == 'expense' ? 'Sửa khoản chi' : 'Sửa khoản thu',
+          _transactionType == 'expense' ? l10n.editExpense : l10n.editIncome,
           style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -93,12 +97,12 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           IconButton(
             icon: const Icon(Icons.copy, color: Colors.blue),
             onPressed: _copyTransaction,
-            tooltip: 'Sao chép',
+            tooltip: l10n.copy,
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
             onPressed: _confirmDelete,
-            tooltip: 'Xóa',
+            tooltip: l10n.delete,
           ),
         ],
       ),
@@ -112,7 +116,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
               // Ngày
               Row(
                 children: [
-                  const Text('Ngày', style: TextStyle(fontSize: 16)),
+                  Text(l10n.date, style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Container(
@@ -144,7 +148,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                               }
                             },
                             child: Text(
-                              "${DateFormat('dd/MM/yyyy').format(_selectedDate)} (${_getWeekdayName(_selectedDate)})",
+                              "${DateFormat.yMd(Localizations.localeOf(context).toString()).format(_selectedDate)} (${_getWeekdayName(_selectedDate, l10n)})",
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -172,15 +176,15 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                 children: [
                   const Icon(Icons.notes, color: Colors.grey, size: 20),
                   const SizedBox(width: 12),
-                  const Text('Ghi chú', style: TextStyle(fontSize: 16)),
+                  Text(l10n.note, style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: _noteController,
                       decoration: InputDecoration(
                         hintText: _transactionType == 'expense' 
-                          ? 'Nhập ghi chú cho khoản chi này...' 
-                          : 'Nhập ghi chú cho khoản thu này...',
+                          ? l10n.noteHintExpense 
+                          : l10n.noteHintIncome,
                         hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
                         border: InputBorder.none,
                       ),
@@ -192,7 +196,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
               // Tiền chi/thu
               Row(
                 children: [
-                  Text(_transactionType == 'expense' ? 'Tiền chi' : 'Tiền thu', style: TextStyle(fontSize: 16)),
+                  Text(_transactionType == 'expense' ? l10n.expense : l10n.income, style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: GestureDetector(
@@ -214,7 +218,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                               ),
                             ),
                             const Spacer(),
-                            const Text('đ', style: TextStyle(fontSize: 16)),
+                            Text(settings.currencyFormat.currencySymbol, style: const TextStyle(fontSize: 16)),
                           ],
                         ),
                       ),
@@ -223,7 +227,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              const Text('Danh mục', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(l10n.category, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               GridView.builder(
                 shrinkWrap: true,
@@ -242,21 +246,26 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     onTap: () => setState(() => _selectedCategoryId = cat.id),
                     child: Container(
                       decoration: BoxDecoration(
+                        color: isSelected ? Color(cat.colorValue).withOpacity(0.1) : Colors.transparent,
                         border: Border.all(color: isSelected ? Color(cat.colorValue) : Colors.grey.shade200),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          FaIcon(
                             IconUtils.getIconData(cat.iconName),
                             color: Color(cat.colorValue),
-                            size: 30,
+                            size: 24,
                           ),
                           const SizedBox(height: 4),
                           Text(
                             cat.name,
-                            style: TextStyle(fontSize: 12, color: isSelected ? Color(cat.colorValue) : Colors.black),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isSelected ? Color(cat.colorValue) : Colors.black,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -277,9 +286,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     backgroundColor: Colors.blue,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                   ),
-                  child: const Text(
-                    'Lưu thay đổi',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  child: Text(
+                    l10n.saveChanges,
+                    style: const TextStyle(color: Colors.white, fontSize: 18),
                   ),
                 ),
               ),
@@ -290,17 +299,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     );
   }
 
-  String _getWeekdayName(DateTime date) {
-    switch (date.weekday) {
-      case 1: return 'Thứ Hai';
-      case 2: return 'Thứ Ba';
-      case 3: return 'Thứ Tư';
-      case 4: return 'Thứ Năm';
-      case 5: return 'Thứ Sáu';
-      case 6: return 'Thứ Bảy';
-      case 7: return 'Chủ Nhật';
-      default: return '';
-    }
+  String _getWeekdayName(DateTime date, AppLocalizations l10n) {
+    return DateFormat.EEEE(Localizations.localeOf(context).toString()).format(date);
   }
 
   String _formatAmount(String text) {
@@ -313,15 +313,19 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   }
 
   Future<void> _updateTransaction() async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    
     if (_amountController.text.isEmpty || _amountController.text == '0') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập số tiền')),
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.pleaseEnterAmount)),
       );
       return;
     }
     if (_selectedCategoryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn danh mục')),
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.pleaseSelectCategory)),
       );
       return;
     }
@@ -344,33 +348,65 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     if (widget.transaction.documentId != null) {
       await financeProvider.updateTransaction(widget.transaction.documentId!, updatedTx);
     }
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Text(l10n.transactionUpdated),
+          ],
+        ),
+        backgroundColor: Colors.blue,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
     
-    if (mounted) Navigator.pop(context);
+    navigator.pop();
   }
 
   void _confirmDelete() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xác nhận xóa'),
-        content: const Text('Bạn có chắc chắn muốn xóa giao dịch này không?'),
+        title: Text(l10n.confirmDelete),
+        content: Text(l10n.confirmDeleteTransaction),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
               final financeProvider = Provider.of<FinanceProvider>(context, listen: false);
               if (widget.transaction.documentId != null) {
                 await financeProvider.deleteTransaction(widget.transaction.documentId!);
               }
-              if (mounted) {
-                Navigator.pop(context); // Đóng dialog
-                Navigator.pop(context); // Quay lại màn hình trước đó
-              }
+
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.delete_sweep, color: Colors.white),
+                      const SizedBox(width: 12),
+                      Text(l10n.transactionDeleted),
+                    ],
+                  ),
+                  backgroundColor: Colors.redAccent,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              );
+
+              navigator.pop(); // Đóng dialog
+              navigator.pop(); // Quay lại màn hình trước đó
             },
-            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+            child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),

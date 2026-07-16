@@ -1,19 +1,19 @@
+import 'package:app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
 import '../../utils/icon_utils.dart';
-import '../../main.dart';
 import '../../providers/settings_provider.dart';
 import '../category/category_management_screen.dart'; // Import màn hình quản lý danh mục
 import 'widgets/numeric_calculator_keyboard.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? initialTransaction;
-  const AddTransactionScreen({Key? key, this.initialTransaction}) : super(key: key);
+  const AddTransactionScreen({super.key, this.initialTransaction});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -26,7 +26,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   late String _transactionType;
   String? _selectedCategoryId;
-  String? _categoryError;
   late DateTime _selectedDate;
 
   @override
@@ -104,8 +103,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildTypeTab('Tiền chi', 'expense'),
-              _buildTypeTab('Tiền thu', 'income'),
+              _buildTypeTab(AppLocalizations.of(context)?.expense ?? 'Chi tiêu', 'expense'),
+              _buildTypeTab(AppLocalizations.of(context)?.income ?? 'Thu nhập', 'income'),
             ],
           ),
         ),
@@ -134,7 +133,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               // Ngày
               Row(
                 children: [
-                  const Text('Ngày', style: TextStyle(fontSize: 16)),
+                  Text(AppLocalizations.of(context)?.date ?? 'Ngày', style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Container(
@@ -166,7 +165,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                               }
                             },
                             child: Text(
-                              "${DateFormat('dd/MM/yyyy').format(_selectedDate)} (${_getWeekdayName(_selectedDate)})",
+                              "${DateFormat.yMd(Localizations.localeOf(context).toString()).format(_selectedDate)} (${_getWeekdayName(_selectedDate)})",
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -194,15 +193,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 children: [
                   const Icon(Icons.notes, color: Colors.grey, size: 20),
                   const SizedBox(width: 12),
-                  const Text('Ghi chú', style: TextStyle(fontSize: 16)),
+                  Text(AppLocalizations.of(context)?.note ?? 'Ghi chú', style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: _noteController,
                       decoration: InputDecoration(
                         hintText: _transactionType == 'expense' 
-                          ? 'Nhập ghi chú cho khoản chi này...' 
-                          : 'Nhập ghi chú cho khoản thu này...',
+                          ? (AppLocalizations.of(context)?.noteHintExpense ?? 'Nhập ghi chú cho khoản chi này...') 
+                          : (AppLocalizations.of(context)?.noteHintIncome ?? 'Nhập ghi chú cho khoản thu này...'),
                         hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
                         border: InputBorder.none,
                       ),
@@ -214,7 +213,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               // Tiền chi/thu
               Row(
                 children: [
-                  Text(_transactionType == 'expense' ? 'Tiền chi' : 'Tiền thu', style: TextStyle(fontSize: 16)),
+                  Text(_transactionType == 'expense' 
+                    ? (AppLocalizations.of(context)?.expense ?? 'Chi tiêu') 
+                    : (AppLocalizations.of(context)?.income ?? 'Thu nhập'), 
+                    style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: GestureDetector(
@@ -236,7 +238,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                               ),
                             ),
                             const Spacer(),
-                            Text(settingsProvider.currency == 'USD' ? '\$' : 'đ', style: const TextStyle(fontSize: 16)),
+                            Text(settingsProvider.currencyFormat.currencySymbol, style: const TextStyle(fontSize: 16)),
                           ],
                         ),
                       ),
@@ -245,7 +247,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              const Text('Danh mục', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(AppLocalizations.of(context)?.category ?? 'Danh mục', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               GridView.builder(
                 shrinkWrap: true,
@@ -260,8 +262,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 itemBuilder: (context, index) {
                   if (index == filteredCategories.length) {
                     return _buildCategoryItem(
-                      icon: Icons.chevron_right,
-                      label: 'Chỉnh sửa',
+                      icon: FontAwesomeIcons.chevronRight,
+                      label: AppLocalizations.of(context)?.edit ?? 'Chỉnh sửa',
                       color: Colors.grey,
                       onTap: () {
                         Navigator.push(
@@ -295,7 +297,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                   ),
                   child: Text(
-                    _transactionType == 'expense' ? 'Nhập khoản chi' : 'Nhập khoản thu',
+                    _transactionType == 'expense' 
+                      ? (AppLocalizations.of(context)?.enterExpense ?? 'Nhập khoản chi') 
+                      : (AppLocalizations.of(context)?.enterIncome ?? 'Nhập khoản thu'),
                     style: const TextStyle(color: Colors.white, fontSize: 18),
                   ),
                 ),
@@ -332,7 +336,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Widget _buildCategoryItem({
-    required IconData icon,
+    required dynamic icon,
     required String label,
     required Color color,
     bool isSelected = false,
@@ -342,17 +346,24 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
           border: Border.all(color: isSelected ? color : Colors.grey.shade200),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 30),
+            icon is FaIconData 
+              ? FaIcon(icon, color: color, size: 24)
+              : (icon is IconData ? Icon(icon, color: color, size: 24) : const SizedBox()),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: isSelected ? color : Colors.black),
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected ? color : Colors.black,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -364,16 +375,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   String _getWeekdayName(DateTime date) {
-    switch (date.weekday) {
-      case 1: return 'Thứ Hai';
-      case 2: return 'Thứ Ba';
-      case 3: return 'Thứ Tư';
-      case 4: return 'Thứ Năm';
-      case 5: return 'Thứ Sáu';
-      case 6: return 'Thứ Bảy';
-      case 7: return 'Chủ Nhật';
-      default: return '';
-    }
+    return DateFormat.EEEE(Localizations.localeOf(context).toString()).format(date);
   }
 
   String _formatAmount(String text) {
@@ -386,15 +388,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Future<void> _saveTransaction() async {
+    final l10n = AppLocalizations.of(context);
     if (_amountController.text.isEmpty || _amountController.text == '0') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập số tiền')),
+        SnackBar(content: Text(l10n?.pleaseEnterAmount ?? 'Vui lòng nhập số tiền')),
       );
       return;
     }
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn danh mục')),
+        SnackBar(content: Text(l10n?.pleaseSelectCategory ?? 'Vui lòng chọn danh mục')),
       );
       return;
     }
@@ -413,16 +416,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         bool? confirm = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Cảnh báo ngân sách', style: TextStyle(color: Colors.red)),
-            content: Text('Khoản chi này sẽ làm tổng chi tiêu vượt hạn mức (${settingsProvider.formatAmount(settingsProvider.budgetLimit)}). Bạn có chắc chắn muốn tiếp tục?'),
+            title: Text(l10n?.budgetWarning ?? 'Cảnh báo ngân sách', style: const TextStyle(color: Colors.red)),
+            content: Text(l10n?.budgetWarningDesc(settingsProvider.formatAmount(settingsProvider.budgetLimit)) ?? 'Khoản chi này sẽ làm tổng chi tiêu vượt hạn mức (${settingsProvider.formatAmount(settingsProvider.budgetLimit)}). Bạn có chắc chắn muốn tiếp tục?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Hủy'),
+                child: Text(l10n?.cancel ?? 'Hủy'),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Tiếp tục', style: TextStyle(color: Colors.red)),
+                child: Text(l10n?.continueText ?? 'Tiếp tục', style: const TextStyle(color: Colors.red)),
               ),
             ],
           ),
@@ -440,6 +443,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
 
     await financeProvider.addTransaction(newTx);
-    if (mounted) Navigator.pop(context);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(l10n?.transactionAdded ?? 'Đã thêm dữ liệu'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      Navigator.pop(context);
+    }
   }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:app/l10n/app_localizations.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../data/models/category_model.dart';
@@ -9,7 +11,7 @@ import '../../utils/icon_utils.dart';
 import '../transaction/edit_transaction_screen.dart';
 
 class StatisticsScreen extends StatefulWidget {
-  const StatisticsScreen({Key? key}) : super(key: key);
+  const StatisticsScreen({super.key});
 
   @override
   State<StatisticsScreen> createState() => _StatisticsScreenState();
@@ -30,18 +32,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   double? _minAmount;
   double? _maxAmount;
 
-  // Hàm lấy màu từ model, nếu không có thì dùng màu mặc định
-  Color _getCategoryColor(FinanceProvider provider, String categoryId) {
-    final category = provider.categories.firstWhere(
-      (cat) => cat.id == categoryId,
-      orElse: () => CategoryModel(
-        name: 'Khác',
-        type: 'expense',
-        iconName: 'category',
-        colorValue: 0xFF9E9E9E,
-      ),
-    );
-    return Color(category.colorValue);
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<FinanceProvider>(context, listen: false).fetchAllTransactionsForStats();
+    });
   }
 
   void _previousPeriod() {
@@ -69,44 +65,36 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final financeProvider = Provider.of<FinanceProvider>(context);
     final settings = Provider.of<SettingsProvider>(context);
 
+    final l10n = AppLocalizations.of(context)!;
+
     // 1. Lọc giao dịch theo thời gian được chọn và các bộ lọc bổ sung
     final Map<String, CategoryModel> categoryMap = {
       for (var cat in financeProvider.categories) cat.id ?? '': cat
     };
 
     // 1. Lọc giao dịch
-    final filteredTransactions = financeProvider.transactions.where((tx) {
-      // Nếu đang tìm kiếm, ưu tiên lọc theo từ khóa trên toàn bộ dữ liệu (hoặc có thể kết hợp lọc thời gian nếu muốn)
-      if (_isSearching && _searchQuery.isNotEmpty) {
-        final noteMatch = tx.note.toLowerCase().contains(_searchQuery.toLowerCase());
-        final catMatch = (categoryMap[tx.categoryId]?.name ?? 'Khác')
-            .toLowerCase()
-            .contains(_searchQuery.toLowerCase());
-        return noteMatch || catMatch;
-      }
-
-      // Lọc theo thời gian (khi không tìm kiếm hoặc tìm kiếm trống)
-      bool timeMatch;
-      if (_isMonthly) {
-        timeMatch = tx.date.year == _selectedDate.year &&
-            tx.date.month == _selectedDate.month;
-      } else {
-        timeMatch = tx.date.year == _selectedDate.year;
-      }
-      if (!timeMatch) return false;
-
-      // Lọc theo danh mục
-      if (_selectedCategory != 'Tất cả' &&
-          (categoryMap[tx.categoryId]?.name ?? 'Khác') != _selectedCategory) {
-        return false;
-      }
-
-      // Lọc theo số tiền
-      if (_minAmount != null && tx.amount < _minAmount!) return false;
-      if (_maxAmount != null && tx.amount > _maxAmount!) return false;
-
-      return true;
-    }).toList();
+    final filteredTransactions = (_isSearching && _searchQuery.isNotEmpty)
+        ? financeProvider.statsTransactions.where((tx) {
+            final noteMatch = tx.note.toLowerCase().contains(_searchQuery.toLowerCase());
+            final catMatch = (categoryMap[tx.categoryId]?.name ?? l10n.other)
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase());
+            return noteMatch || catMatch;
+          }).toList()
+        : (_isMonthly 
+            ? financeProvider.getTransactionsByMonth(_selectedDate)
+            : financeProvider.getTransactionsByYear(_selectedDate.year))
+          .where((tx) {
+            // Lọc theo danh mục
+            if (_selectedCategory != 'Tất cả' && _selectedCategory != l10n.all &&
+                (categoryMap[tx.categoryId]?.name ?? l10n.other) != _selectedCategory) {
+              return false;
+            }
+            // Lọc theo số tiền
+            if (_minAmount != null && tx.amount < _minAmount!) return false;
+            if (_maxAmount != null && tx.amount > _maxAmount!) return false;
+            return true;
+          }).toList();
 
     // 2. Tính toán các chỉ số tóm tắt
     double periodIncome = 0;
@@ -145,8 +133,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Tìm kiếm ghi chú, danh mục...',
+                decoration: InputDecoration(
+                  hintText: l10n.searchHint,
                   border: InputBorder.none,
                 ),
                 style: const TextStyle(fontSize: 16),
@@ -159,8 +147,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildTopTab('Hàng Tháng', _isMonthly, () => setState(() => _isMonthly = true)),
-                  _buildTopTab('Hàng Năm', !_isMonthly, () => setState(() => _isMonthly = false)),
+                  _buildTopTab(l10n.monthly, _isMonthly, () => setState(() => _isMonthly = true)),
+                  _buildTopTab(l10n.yearly, !_isMonthly, () => setState(() => _isMonthly = false)),
                 ],
               ),
         centerTitle: true,
@@ -175,10 +163,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   });
                 },
               )
-            : IconButton(
-                icon: const Icon(Icons.camera_alt_outlined, color: Colors.blue),
-                onPressed: () {},
-              ),
+            : null,
         actions: [
           if (!_isSearching)
             IconButton(
@@ -201,156 +186,171 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ],
       ),
       body: _isSearching && _searchQuery.isNotEmpty
-          ? _buildSearchResults(filteredTransactions, categoryMap, settings)
-          : Column(
-              children: [
-                // Bộ chọn thời gian (Tháng/Năm)
-          Container(
-            color: Colors.blue.shade50.withOpacity(0.3),
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: _previousPeriod,
-                  icon: const Icon(Icons.arrow_back_ios, size: 16),
-                ),
-                Column(
-                  children: [
-                    Text(
-                      _isMonthly
-                          ? DateFormat('MM / yyyy').format(_selectedDate)
-                          : DateFormat('yyyy').format(_selectedDate),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    if (_isMonthly)
-                      Text(
-                        "(01/${_selectedDate.month.toString().padLeft(2, '0')} - ${DateTime(_selectedDate.year, _selectedDate.month + 1, 0).day}/${_selectedDate.month.toString().padLeft(2, '0')})",
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                  ],
-                ),
-                IconButton(
-                  onPressed: _nextPeriod,
-                  icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                ),
-              ],
-            ),
-          ),
-
-          // Bảng tóm tắt Thu/Chi (Giống hình ảnh)
-          Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade200),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
+          ? _buildSearchResults(filteredTransactions, categoryMap, settings, l10n)
+          : TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 600),
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: child,
+                  ),
+                );
+              },
+              child: Column(
+                children: [
+                  // Bộ chọn thời gian (Tháng/Năm)
+            Container(
+              color: Colors.blue.shade50.withOpacity(0.3),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    onPressed: _previousPeriod,
+                    icon: const Icon(Icons.arrow_back_ios, size: 16),
+                  ),
+                  Column(
                     children: [
-                      _buildSummaryItem('Chi tiêu', periodExpense, Colors.red, settings, isNegative: true),
-                      Container(width: 1, height: 40, color: Colors.grey.shade200),
-                      _buildSummaryItem('Thu nhập', periodIncome, Colors.blue, settings),
+                      Text(
+                        _isMonthly
+                            ? DateFormat.yM(Localizations.localeOf(context).toString()).format(_selectedDate)
+                            : DateFormat.y(Localizations.localeOf(context).toString()).format(_selectedDate),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      if (_isMonthly)
+                        Text(
+                          "(01/${_selectedDate.month.toString().padLeft(2, '0')} - ${DateTime(_selectedDate.year, _selectedDate.month + 1, 0).day}/${_selectedDate.month.toString().padLeft(2, '0')})",
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
                     ],
                   ),
-                ),
-                const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Thu chi', style: TextStyle(color: Colors.grey)),
-                      Text(
-                        '${periodNet >= 0 ? '+' : ''}${settings.formatAmount(periodNet)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ],
+                  IconButton(
+                    onPressed: _nextPeriod,
+                    icon: const Icon(Icons.arrow_forward_ios, size: 16),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          // Tabs chuyển đổi Chi tiêu / Thu nhập
-          Row(
-            children: [
-              _buildChartTypeTab('Chi tiêu', _chartType == 'expense', () => setState(() => _chartType = 'expense')),
-              _buildChartTypeTab('Thu nhập', _chartType == 'income', () => setState(() => _chartType = 'income')),
-            ],
-          ),
-
-          // Biểu đồ Donut và Danh sách (Tối ưu hiệu năng với CustomScrollView)
-          Expanded(
-            child: chartDataTransactions.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+            // Bảng tóm tắt Thu/Chi
+            Container(
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
                       children: [
-                        Icon(Icons.pie_chart_outline, size: 80, color: Colors.grey.shade300),
-                        const SizedBox(height: 16),
-                        Text('Không có dữ liệu ${_chartType == 'expense' ? 'chi tiêu' : 'thu nhập'}',
-                            style: TextStyle(color: Colors.grey.shade500)),
+                        _buildSummaryItem(l10n.expense, periodExpense, Colors.red, settings, isNegative: true),
+                        Container(width: 1, height: 40, color: Colors.grey.shade200),
+                        _buildSummaryItem(l10n.income, periodIncome, Colors.blue, settings),
                       ],
                     ),
-                  )
-                : CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 20),
-                            // Biểu đồ tròn
-                            SizedBox(
-                              height: 220,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  PieChart(
-                                    PieChartData(
-                                      sectionsSpace: 0,
-                                      centerSpaceRadius: 70,
-                                      startDegreeOffset: -90,
-                                      sections: sortedEntries.map((entry) {
-                                        final categoryId = entry.key;
-                                        final cat = categoryMap[categoryId] ??
-                                            CategoryModel(
-                                              name: 'Khác',
-                                              type: 'expense',
-                                              iconName: 'category',
-                                              colorValue: 0xFF9E9E9E,
-                                            );
-                                        return PieChartSectionData(
-                                          color: Color(cat.colorValue),
-                                          value: entry.value,
-                                          title: '',
-                                          radius: 50,
-                                        );
-                                      }).toList(),
+                  ),
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(l10n.netBalance, style: const TextStyle(color: Colors.grey)),
+                        Text(
+                          '${periodNet >= 0 ? '+' : ''}${settings.formatAmount(periodNet)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Tabs chuyển đổi Chi tiêu / Thu nhập
+            Row(
+              children: [
+                _buildChartTypeTab(l10n.expense, _chartType == 'expense', () => setState(() => _chartType = 'expense')),
+                _buildChartTypeTab(l10n.income, _chartType == 'income', () => setState(() => _chartType = 'income')),
+              ],
+            ),
+
+            // Biểu đồ Donut và Danh sách (Thêm AnimatedSwitcher để chuyển đổi mượt mà)
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.0, 0.02),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: chartDataTransactions.isEmpty
+                  ? Center(
+                      key: ValueKey('empty_$_chartType'),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.pie_chart_outline, size: 80, color: Colors.grey.shade300),
+                          const SizedBox(height: 16),
+                          Text(l10n.noData(_chartType == 'expense' ? l10n.expense.toLowerCase() : l10n.income.toLowerCase()),
+                              style: TextStyle(color: Colors.grey.shade500)),
+                        ],
+                      ),
+                    )
+                  : CustomScrollView(
+                      key: ValueKey('${_chartType}_${_isMonthly}_${_selectedDate.toIso8601String()}'),
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 20),
+                              // Biểu đồ tròn
+                              SizedBox(
+                                height: 220,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    PieChart(
+                                      PieChartData(
+                                        sectionsSpace: 0,
+                                        centerSpaceRadius: 70,
+                                        startDegreeOffset: -90,
+                                        sections: sortedEntries.map((entry) {
+                                          final categoryId = entry.key;
+                                          final cat = categoryMap[categoryId] ??
+                                              CategoryModel(
+                                                name: l10n.other,
+                                                type: 'expense',
+                                                iconName: 'category',
+                                                colorValue: 0xFF9E9E9E,
+                                              );
+                                          return PieChartSectionData(
+                                            color: Color(cat.colorValue),
+                                            value: entry.value,
+                                            title: '',
+                                            radius: 50,
+                                          );
+                                        }).toList(),
+                                      ),
+                                      swapAnimationDuration: const Duration(milliseconds: 600),
+                                      swapAnimationCurve: Curves.easeInOutBack,
                                     ),
-                                  ),
-                                  // Text ở giữa biểu đồ
-                                  if (sortedEntries.isNotEmpty)
-                                    Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          categoryMap[sortedEntries.first.key]?.name ?? 'Khác',
-                                          style: TextStyle(
-                                            color: Color(categoryMap[sortedEntries.first.key]?.colorValue ?? 0xFF9E9E9E),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
                             const SizedBox(height: 20),
                             // 1. Danh sách phân tích theo phần trăm (Category Breakdown)
                             ...sortedEntries.map((entry) {
@@ -359,7 +359,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                               final percentage = totalForChart > 0 ? (amount / totalForChart * 100) : 0;
                               final category = categoryMap[categoryId] ??
                                   CategoryModel(
-                                    name: 'Khác',
+                                    name: l10n.other,
                                     type: _chartType,
                                     iconName: 'category',
                                     colorValue: 0xFF9E9E9E,
@@ -393,16 +393,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                   ],
                                 ),
                               );
-                            }).toList(),
+                            }),
 
                             const Divider(height: 40, thickness: 8, color: Color(0xFFF5F5F5)),
 
                             // 2. Tiêu đề phần chi tiết giao dịch
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               child: Text(
-                                'Giao dịch chi tiết',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                l10n.detailedTransactions,
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
@@ -416,7 +416,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             final tx = filteredTransactions[index];
                             final category = categoryMap[tx.categoryId] ??
                                 CategoryModel(
-                                  name: 'Khác',
+                                  name: l10n.other,
                                   type: tx.type,
                                   iconName: 'category',
                                   colorValue: 0xFF9E9E9E,
@@ -424,13 +424,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             final isIncome = tx.type == 'income';
 
                             return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
+                              onTap: () async {
+                                await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => EditTransactionScreen(transaction: tx),
                                   ),
                                 );
+                                if (mounted) {
+                                  Provider.of<FinanceProvider>(context, listen: false).fetchAllTransactionsForStats();
+                                }
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -443,10 +446,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                     CircleAvatar(
                                       backgroundColor: Color(category.colorValue).withOpacity(0.1),
                                       radius: 18,
-                                      child: Icon(
+                                      child: FaIcon(
                                         IconUtils.getIconData(category.iconName),
                                         color: Color(category.colorValue),
-                                        size: 18,
+                                        size: 16,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -485,7 +488,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                             ),
                                           ),
                                           Text(
-                                            DateFormat('dd/MM').format(tx.date),
+                                            DateFormat.MMMd(Localizations.localeOf(context).toString()).format(tx.date),
                                             style: const TextStyle(color: Colors.grey, fontSize: 11),
                                           ),
                                         ],
@@ -502,27 +505,30 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                       const SliverToBoxAdapter(child: SizedBox(height: 80)),
                     ],
                   ),
-          ),
-        ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSearchResults(List<dynamic> transactions, Map<String, CategoryModel> categoryMap, SettingsProvider settings) {
+  Widget _buildSearchResults(List<dynamic> transactions, Map<String, CategoryModel> categoryMap, SettingsProvider settings, AppLocalizations l10n) {
+    final l10n = AppLocalizations.of(context)!;
     if (transactions.isEmpty) {
-      return const Center(child: Text('Không tìm thấy giao dịch nào'));
+      return Center(child: Text(l10n.noResults));
     }
 
     // Nhóm giao dịch theo ngày
     Map<String, List<dynamic>> grouped = {};
     for (var tx in transactions) {
-      String dateStr = DateFormat('dd/MM/yyyy').format(tx.date);
+      String dateStr = DateFormat.yMd(Localizations.localeOf(context).toString()).format(tx.date);
       if (grouped[dateStr] == null) grouped[dateStr] = [];
       grouped[dateStr]!.add(tx);
     }
 
     var sortedDates = grouped.keys.toList()
-      ..sort((a, b) => DateFormat('dd/MM/yyyy').parse(b).compareTo(DateFormat('dd/MM/yyyy').parse(a)));
+      ..sort((a, b) => DateFormat.yMd(Localizations.localeOf(context).toString()).parse(b).compareTo(DateFormat.yMd(Localizations.localeOf(context).toString()).parse(a)));
 
     return ListView.builder(
       itemCount: sortedDates.length,
@@ -546,17 +552,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
               ),
             ),
-            ...txs.map((tx) => _buildTransactionItem(tx, categoryMap, settings)).toList(),
+            ...txs.map((tx) => _buildTransactionItem(tx, categoryMap, settings, l10n)),
           ],
         );
       },
     );
   }
 
-  Widget _buildTransactionItem(dynamic tx, Map<String, CategoryModel> categoryMap, SettingsProvider settings) {
+  Widget _buildTransactionItem(dynamic tx, Map<String, CategoryModel> categoryMap, SettingsProvider settings, AppLocalizations l10n) {
     final category = categoryMap[tx.categoryId] ??
         CategoryModel(
-          name: 'Khác',
+          name: l10n.other,
           type: tx.type,
           iconName: 'category',
           colorValue: 0xFF9E9E9E,
@@ -564,13 +570,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final isIncome = tx.type == 'income';
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => EditTransactionScreen(transaction: tx),
           ),
         );
+        if (mounted) {
+          Provider.of<FinanceProvider>(context, listen: false).fetchAllTransactionsForStats();
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -582,10 +591,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             CircleAvatar(
               backgroundColor: Color(category.colorValue).withOpacity(0.1),
               radius: 18,
-              child: Icon(
+              child: FaIcon(
                 IconUtils.getIconData(category.iconName),
                 color: Color(category.colorValue),
-                size: 18,
+                size: 16,
               ),
             ),
             const SizedBox(width: 12),
@@ -689,16 +698,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  String _getCategoryName(FinanceProvider financeProvider, String categoryId) {
-    for (final category in financeProvider.categories) {
-      if (category.id == categoryId) {
-        return category.name;
-      }
-    }
-    return 'Khác';
-  }
-
   void _showFilterDialog(FinanceProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -721,8 +722,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Bộ lọc chi tiết',
-                        style: TextStyle(
+                    Text(l10n.filterDetails,
+                        style: const TextStyle(
                             fontSize: 20, fontWeight: FontWeight.bold)),
                     TextButton(
                       onPressed: () {
@@ -733,23 +734,79 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                         });
                         Navigator.pop(context);
                       },
-                      child: const Text('Đặt lại'),
+                      child: Text(l10n.reset),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                const Text('Danh mục',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                DropdownButton<String>(
+                Text(l10n.category,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                  ),
                   isExpanded: true,
-                  value: _selectedCategory,
+                  value: _selectedCategory == 'Tất cả' ? l10n.all : _selectedCategory,
                   items: [
-                    'Tất cả',
+                    l10n.all,
                     ...provider.categories.map((e) => e.name).toSet()
                   ].map((String value) {
+                    // Tìm category để lấy icon và màu sắc
+                    final category = value == l10n.all 
+                      ? CategoryModel(
+                          id: 'all',
+                          name: l10n.all,
+                          type: 'all',
+                          iconName: 'list',
+                          colorValue: 0xFF2196F3,
+                        )
+                      : provider.categories.firstWhere(
+                          (c) => c.name == value,
+                          orElse: () => CategoryModel(
+                            id: 'other',
+                            name: l10n.other,
+                            type: 'other',
+                            iconName: 'category',
+                            colorValue: 0xFF9E9E9E,
+                          ),
+                        );
+
                     return DropdownMenuItem<String>(
                       value: value,
-                      child: Text(value),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Color(category.colorValue).withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: value == l10n.all
+                                ? const Icon(Icons.apps, color: Colors.blue, size: 18)
+                                : FaIcon(
+                                    IconUtils.getIconData(category.iconName),
+                                    color: Color(category.colorValue),
+                                    size: 16,
+                                  ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            value,
+                            style: const TextStyle(fontSize: 15),
+                          ),
+                        ],
+                      ),
                     );
                   }).toList(),
                   onChanged: (val) {
@@ -758,22 +815,36 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     }
                   },
                 ),
-                const SizedBox(height: 20),
-                const Text('Khoảng giá (đ)',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 25),
+                Text(l10n.amountRange,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
-                        decoration: const InputDecoration(hintText: 'Từ'),
+                        decoration: InputDecoration(
+                          hintText: l10n.from,
+                          prefixIcon: const Icon(Icons.remove_circle_outline, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
                         keyboardType: TextInputType.number,
                         onChanged: (val) => _minAmount = double.tryParse(val),
                       ),
                     ),
-                    const SizedBox(width: 20),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('—', style: TextStyle(color: Colors.grey)),
+                    ),
                     Expanded(
                       child: TextField(
-                        decoration: const InputDecoration(hintText: 'Đến'),
+                        decoration: InputDecoration(
+                          hintText: l10n.to,
+                          prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
                         keyboardType: TextInputType.number,
                         onChanged: (val) => _maxAmount = double.tryParse(val),
                       ),
@@ -792,8 +863,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                       backgroundColor: Colors.blue,
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
-                    child: const Text('Áp dụng',
-                        style: TextStyle(color: Colors.white)),
+                    child: Text(l10n.apply,
+                        style: const TextStyle(color: Colors.white)),
                   ),
                 ),
                 const SizedBox(height: 20),

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/category_model.dart';
-import '../../providers/auth_provider.dart';
+
 import '../../providers/finance_provider.dart';
 import '../../utils/icon_utils.dart';
 import '../calendar/calendar_screen.dart';
+import '../transaction/all_transactions_screen.dart';
 import '../transaction/add_transaction_screen.dart';
 import '../transaction/edit_transaction_screen.dart';
 import '../statistics/statistics_screen.dart';
@@ -15,7 +17,7 @@ import 'package:app/l10n/app_localizations.dart';
 import 'widgets/balance_card.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -27,7 +29,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      const DashboardHomeContent(),
+      DashboardHomeContent(onSeeAll: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AllTransactionsScreen()),
+        );
+      }),
       const StatisticsScreen(),
       const CalendarScreen(),
       const SettingsScreen(),
@@ -36,21 +43,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       body: screens[_currentIndex],
 
-      // Nút tròn nổi (+) ở giữa đáy màn hình
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddTransactionScreen(),
+      // Nút tròn nổi (+) chỉ hiển thị nếu không phải màn hình Cài đặt (index 3)
+      floatingActionButton: _currentIndex == 3
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddTransactionScreen(),
+                  ),
+                );
+              },
+              backgroundColor: Colors.blue.shade600,
+              foregroundColor: Colors.white,
+              shape: const CircleBorder(),
+              child: const Icon(Icons.add, size: 28),
             ),
-          );
-        },
-        backgroundColor: Colors.blue.shade600,
-        foregroundColor: Colors.white,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, size: 28),
-      ),
 
       // Đặt nút nổi ở giữa nhưng nhấc lên khỏi thanh điều hướng để tránh sát tab Thống kê
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -66,18 +75,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         selectedItemColor: Colors.blue.shade700,
         unselectedItemColor: Colors.grey,
         items: [
-          BottomNavigationBarItem(icon: const Icon(Icons.home), label: AppLocalizations.of(context)?.dashboard ?? 'Trang chủ'),
+          BottomNavigationBarItem(icon: const Icon(Icons.home), label: AppLocalizations.of(context)!.dashboard),
           BottomNavigationBarItem(
             icon: const Icon(Icons.pie_chart),
-            label: AppLocalizations.of(context)?.statistics ?? 'Thống kê',
+            label: AppLocalizations.of(context)!.statistics,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: 'Lịch', // Có thể thêm vào arb sau
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.calendar_month),
+            label: AppLocalizations.of(context)!.calendar,
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.settings),
-            label: AppLocalizations.of(context)?.settings ?? 'Cài đặt',
+            label: AppLocalizations.of(context)!.settings,
           ),
         ],
       ),
@@ -86,40 +95,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class DashboardHomeContent extends StatelessWidget {
-  const DashboardHomeContent({Key? key}) : super(key: key);
+  final VoidCallback? onSeeAll;
+  const DashboardHomeContent({super.key, this.onSeeAll});
 
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
-    final currencyFormat = settings.currencyFormat;
     final isHidden = settings.isBalanceHidden;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          AppLocalizations.of(context)?.appTitle ?? 'Quản Lý Thu Chi',
+          AppLocalizations.of(context)!.appTitle,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
-        //logout
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.red),
-            onPressed: () async {
-              // Gọi hàm logout từ AuthProvider (phải đặt listen: false vì nằm trong hàm sự kiện)
-              await Provider.of<AuthProvider>(context, listen: false).logout();
-            },
-          ),
-        ],
       ),
       // Sử dụng Consumer để tự động cập nhật UI khi dữ liệu trong FinanceProvider thay đổi
       body: Consumer<FinanceProvider>(
         builder: (context, financeProvider, child) {
-          final transactions = financeProvider.transactions;
-          final categories = financeProvider.categories;
+          // Lấy 5 giao dịch gần nhất
+          final recentTransactions = financeProvider.transactions.length > 5 
+              ? financeProvider.transactions.sublist(0, 5) 
+              : financeProvider.transactions;
+          
+          // Sử dụng memoization đơn giản cho categoryMap nếu danh sách categories không đổi
+          final categoryMap = {
+            for (var cat in financeProvider.categories) cat.id: cat
+          };
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
@@ -133,40 +139,45 @@ class DashboardHomeContent extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Tiêu đề danh sách
-                Text(
-                  AppLocalizations.of(context)?.recentTransactions ?? 'Giao dịch gần đây',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                // Tiêu đề danh sách với nút Xem tất cả
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.recentTransactions,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    TextButton(
+                      onPressed: onSeeAll,
+                      child: Text(AppLocalizations.of(context)!.viewAll),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
 
-                // 2. Danh sách giao dịch thật từ SQLite
+                // 2. Danh sách giao dịch (Sử dụng ListView.separated để UI sạch sẽ hơn)
                 Expanded(
-                  child: transactions.isEmpty
+                  child: recentTransactions.isEmpty
                       ? Center(
                           child: Text(
-                            AppLocalizations.of(context)?.noTransactions ?? 'Chưa có giao dịch nào.',
+                            AppLocalizations.of(context)!.noTransactions,
                             textAlign: TextAlign.center,
                             style: const TextStyle(color: Colors.grey, fontSize: 16),
                           ),
                         )
                       : ListView.builder(
-                          itemCount: transactions.length,
+                          padding: EdgeInsets.zero,
+                          itemCount: recentTransactions.length,
                           itemBuilder: (context, index) {
-                            final tx = transactions[index];
-
-                            // Tìm danh mục tương ứng từ DB để lấy tên danh mục hiển thị
-                            final category = categories.firstWhere(
-                              (cat) => cat.id == tx.categoryId,
-                              orElse: () => CategoryModel(
+                            final tx = recentTransactions[index];
+                            final l10n = AppLocalizations.of(context)!;
+                            final category = categoryMap[tx.categoryId] ?? CategoryModel(
                                 id: '0',
-                                name: 'Khác',
+                                name: l10n.other,
                                 type: 'expense',
                                 iconName: 'help',
                                 colorValue: 0xFF9E9E9E,
-                              ),
-                            );
-
+                              );
                             final isIncome = tx.type == 'income';
 
                             return Dismissible(
@@ -189,22 +200,22 @@ class DashboardHomeContent extends StatelessWidget {
                                 return await showDialog<bool>(
                                   context: context,
                                   builder: (context) => AlertDialog(
-                                    title: const Text('Xác nhận xóa'),
-                                    content: const Text(
-                                      'Bạn có chắc chắn muốn xóa giao dịch này không?',
+                                    title: Text(l10n.confirmDelete),
+                                    content: Text(
+                                      l10n.confirmDeleteTransaction,
                                     ),
                                     actions: [
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.of(context).pop(false),
-                                        child: const Text('Hủy'),
+                                        child: Text(l10n.cancel),
                                       ),
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.of(context).pop(true),
-                                        child: const Text(
-                                          'Xóa',
-                                          style: TextStyle(color: Colors.red),
+                                        child: Text(
+                                          l10n.delete,
+                                          style: const TextStyle(color: Colors.red),
                                         ),
                                       ),
                                     ],
@@ -220,8 +231,18 @@ class DashboardHomeContent extends StatelessWidget {
 
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Đã xóa giao dịch'),
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.delete_sweep, color: Colors.white),
+                                          const SizedBox(width: 12),
+                                          Text(l10n.transactionDeleted),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.redAccent,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      duration: const Duration(seconds: 2),
                                     ),
                                   );
                                 }
@@ -260,12 +281,7 @@ class DashboardHomeContent extends StatelessWidget {
                                         backgroundColor: Color(
                                           category.colorValue,
                                         ).withOpacity(0.1),
-                                        child: Icon(
-                                          IconUtils.getIconData(
-                                            category.iconName,
-                                          ),
-                                          color: Color(category.colorValue),
-                                        ),
+                                        child: _buildCategoryIcon(category),
                                       ),
                                       const SizedBox(width: 12),
                                       // Phần thân: Tên danh mục và Ghi chú
@@ -318,9 +334,7 @@ class DashboardHomeContent extends StatelessWidget {
                                               ),
                                             ),
                                             Text(
-                                              DateFormat(
-                                                'dd/MM HH:mm',
-                                              ).format(tx.date),
+                                              DateFormat.MMMd(Localizations.localeOf(context).toString()).add_Hm().format(tx.date),
                                               style: const TextStyle(
                                                 fontSize: 11,
                                                 color: Colors.grey,
@@ -343,5 +357,22 @@ class DashboardHomeContent extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Widget _buildCategoryIcon(CategoryModel category) {
+    final iconData = IconUtils.getIconData(category.iconName);
+    if (iconData is FaIconData) {
+      return FaIcon(
+        iconData,
+        color: Color(category.colorValue),
+        size: 20,
+      );
+    } else {
+      return Icon(
+        iconData as IconData,
+        color: Color(category.colorValue),
+        size: 20,
+      );
+    }
   }
 }

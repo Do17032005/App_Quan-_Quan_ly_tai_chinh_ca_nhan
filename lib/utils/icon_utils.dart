@@ -1,32 +1,40 @@
-import 'package:flutter/material.dart';
+
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class IconUtils {
-  static IconData getIconData(String iconName) {
+  static dynamic getIconData(String iconName) {
     switch (iconName) {
-      case 'utensils': return Icons.restaurant;
-      case 'car': return Icons.directions_car;
-      case 'shopping-bag': return Icons.shopping_bag;
-      case 'gamepad': return Icons.videogame_asset;
-      case 'money-bill': return Icons.attach_money;
-      case 'gift': return Icons.card_giftcard;
-      case 'laptop-code': return Icons.laptop_mac;
-      case 'shopping_cart': return Icons.shopping_cart;
-      case 'local_taxi': return Icons.local_taxi;
-      case 'flight': return Icons.flight;
-      case 'fastfood': return Icons.fastfood;
-      case 'cake': return Icons.cake;
-      case 'icecream': return Icons.icecream;
-      case 'rice_bowl': return Icons.rice_bowl;
-      case 'breakfast_dining': return Icons.breakfast_dining;
-      case 'directions_boat': return Icons.directions_boat;
-      case 'donut_large': return Icons.donut_large;
-      case 'videocam': return Icons.videocam;
-      case 'coffee': return Icons.local_cafe;
-      case 'star': return Icons.star;
-      case 'checkroom': return Icons.checkroom;
-      case 'straighten': return Icons.straighten;
-      case 'wine_bar': return Icons.wine_bar;
-      default: return Icons.category;
+      case 'utensils': return FontAwesomeIcons.utensils;
+      case 'car': return FontAwesomeIcons.car;
+      case 'shopping-bag': return FontAwesomeIcons.bagShopping;
+      case 'gamepad': return FontAwesomeIcons.gamepad;
+      case 'money-bill': return FontAwesomeIcons.moneyBill;
+      case 'gift': return FontAwesomeIcons.gift;
+      case 'laptop-code': return FontAwesomeIcons.laptopCode;
+      case 'hospital': return FontAwesomeIcons.hospital;
+      case 'graduation-cap': return FontAwesomeIcons.graduationCap;
+      case 'house': return FontAwesomeIcons.house;
+      case 'phone': return FontAwesomeIcons.phone;
+      case 'plane': return FontAwesomeIcons.plane;
+      case 'shopping_cart': return FontAwesomeIcons.cartShopping;
+      case 'local_taxi': return FontAwesomeIcons.taxi;
+      case 'flight': return FontAwesomeIcons.plane;
+      case 'fastfood': return FontAwesomeIcons.burger;
+      case 'cake': return FontAwesomeIcons.cakeCandles;
+      case 'icecream': return FontAwesomeIcons.iceCream;
+      case 'rice_bowl': return FontAwesomeIcons.bowlRice;
+      case 'breakfast_dining': return FontAwesomeIcons.egg;
+      case 'directions_boat': return FontAwesomeIcons.ship;
+      case 'donut_large': return FontAwesomeIcons.chartPie;
+      case 'videocam': return FontAwesomeIcons.video;
+      case 'coffee': return FontAwesomeIcons.mugHot;
+      case 'star': return FontAwesomeIcons.star;
+      case 'checkroom': return FontAwesomeIcons.shirt;
+      case 'straighten': return FontAwesomeIcons.ruler;
+      case 'wine_bar': return FontAwesomeIcons.wineGlass;
+      case 'help':
+      case 'question':
+      default: return FontAwesomeIcons.circleQuestion;
     }
   }
 }

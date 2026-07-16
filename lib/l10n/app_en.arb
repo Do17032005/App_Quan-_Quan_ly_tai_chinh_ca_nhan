@@ -20,5 +20,142 @@
   "budgetLimit": "Budget Limit",
   "notifications": "Notifications",
   "dailyReminder": "Daily Reminder",
-  "language": "Language"
+  "language": "Language",
+  "calendar": "Calendar",
+  "total": "Total",
+  "startOfMonth": "Start of month",
+  "dayPrefix": "Day",
+  "detailedTransactions": "Detailed transactions",
+  "monthly": "Monthly",
+  "yearly": "Yearly",
+  "searchHint": "Search notes, categories...",
+  "netBalance": "Net Balance",
+  "noData": "No {type} data",
+  "@noData": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "other": "Other",
+  "noResults": "No transactions found",
+  "filterDetails": "Filter Details",
+  "reset": "Reset",
+  "category": "Category",
+  "all": "All",
+  "amountRange": "Amount Range",
+  "from": "From",
+  "to": "To",
+  "apply": "Apply",
+  "budgetAlert": "Budget Limit Warning",
+  "budgetAlertDesc": "Notify when spending exceeds budget",
+  "logout": "Logout",
+  "logoutConfirm": "Are you sure you want to logout?",
+  "cancel": "Cancel",
+  "save": "Save",
+  "setBudgetLimit": "Set Budget Limit",
+  "enterAmount": "Enter amount (e.g., 10000000)",
+  "active": "Active",
+  "unlimited": "Unlimited",
+  "editExpense": "Edit Expense",
+  "editIncome": "Edit Income",
+  "copy": "Copy",
+  "confirmDeleteTransaction": "Are you sure you want to delete this transaction?",
+  "saveChanges": "Save Changes",
+  "enterNote": "Enter note",
+  "date": "Date",
+  "note": "Note",
+  "noteHintExpense": "Enter note for this expense...",
+  "noteHintIncome": "Enter note for this income...",
+  "enterExpense": "Enter Expense",
+  "enterIncome": "Enter Income",
+  "pleaseEnterAmount": "Please enter amount",
+  "pleaseSelectCategory": "Please select category",
+  "budgetWarning": "Budget Warning",
+  "budgetWarningDesc": "This expense will exceed the budget limit ({limit}). Are you sure you want to continue?",
+  "@budgetWarningDesc": {
+    "placeholders": {
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "continueText": "Continue",
+  "addCategory": "Add Category",
+  "confirmDelete": "Confirm Delete",
+  "confirmDeleteCategory": "Are you sure you want to delete category \"{name}\"?",
+  "@confirmDeleteCategory": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "delete": "Delete",
+  "categoryDeleted": "Category \"{name}\" deleted",
+  "@categoryDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createNew": "Create New",
+  "editCategory": "Edit Category",
+  "name": "Name",
+  "enterCategoryName": "Please enter category name",
+  "icons": "Icons",
+  "colors": "Colors",
+  "categoryExists": "This category name already exists",
+  "categoryAdded": "Category \"{name}\" added",
+  "@categoryAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryUpdated": "Category \"{name}\" updated",
+  "@categoryUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "monday": "Monday",
+  "tuesday": "Tuesday",
+  "wednesday": "Wednesday",
+  "thursday": "Thursday",
+  "friday": "Friday",
+  "saturday": "Saturday",
+  "sunday": "Sunday",
+  "transactionDeleted": "Data deleted",
+  "transactionUpdated": "Data updated",
+  "transactionAdded": "Data added",
+  "password": "Password",
+  "edit": "Edit",
+  "welcomeBack": "Welcome Back",
+  "loginSubtitle": "Login to continue managing finances",
+  "login": "Login",
+  "noAccount": "Don't have an account? ",
+  "registerNow": "Register now",
+  "pleaseEnterEmail": "Please enter email",
+  "invalidEmail": "Invalid email format",
+  "pleaseEnterPassword": "Please enter password",
+  "passwordTooShort": "Password must be at least 6 characters",
+  "loginSuccess": "Login successful!",
+  "register": "Register",
+  "createAccount": "Create Account",
+  "registerSubtitle": "Start managing your finances today",
+  "fullName": "Full Name",
+  "pleaseEnterFullName": "Please enter full name",
+  "confirmPassword": "Confirm Password",
+  "pleaseConfirmPassword": "Please confirm password",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "alreadyHaveAccount": "Already have an account? ",
+  "loginNow": "Login now",
+  "registerSuccess": "Registration successful!",
+  "atTime": "At {time}"
 }

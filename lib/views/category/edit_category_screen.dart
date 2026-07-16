@@ -1,5 +1,7 @@
+import 'package:app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../data/models/category_model.dart';
 import '../../providers/finance_provider.dart';
 import '../../utils/icon_utils.dart';
@@ -8,7 +10,7 @@ class EditCategoryScreen extends StatefulWidget {
   final CategoryModel? category;
   final String initialType;
 
-  const EditCategoryScreen({Key? key, this.category, required this.initialType}) : super(key: key);
+  const EditCategoryScreen({super.key, this.category, required this.initialType});
 
   @override
   State<EditCategoryScreen> createState() => _EditCategoryScreenState();
@@ -49,10 +51,11 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(widget.category == null ? 'Tạo mới' : 'Chỉnh sửa'),
+        title: Text(widget.category == null ? (l10n?.createNew ?? 'Tạo mới') : (l10n?.editCategory ?? 'Chỉnh sửa danh mục')),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -68,13 +71,13 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                 children: [
                   Row(
                     children: [
-                      const Text('Tên', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(l10n?.name ?? 'Tên', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(width: 20),
                       Expanded(
                         child: TextField(
                           controller: _nameController,
-                          decoration: const InputDecoration(
-                            hintText: 'Vui lòng nhập vào tên đề mục',
+                          decoration: InputDecoration(
+                            hintText: l10n?.enterCategoryName ?? 'Vui lòng nhập vào tên đề mục',
                             border: InputBorder.none,
                           ),
                         ),
@@ -83,7 +86,7 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                   ),
                   const Divider(),
                   const SizedBox(height: 16),
-                  const Text('Biểu tượng', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(l10n?.icons ?? 'Biểu tượng', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Expanded(
                     flex: 3,
@@ -118,9 +121,11 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                                   ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Icon(
+                                alignment: Alignment.center,
+                                child: FaIcon(
                                   IconUtils.getIconData(icon),
                                   color: isSelected ? Color(_selectedColor) : Colors.grey,
+                                  size: 20,
                                 ),
                               ),
                             );
@@ -130,7 +135,7 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text('Màu sắc', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(l10n?.colors ?? 'Màu sắc', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Expanded(
                     flex: 2,
@@ -189,9 +194,17 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
               child: ElevatedButton(
                 onPressed: () async {
                   final name = _nameController.text.trim();
+                  final messenger = ScaffoldMessenger.of(context);
+                  final navigator = Navigator.of(context);
+                  
                   if (name.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Vui lòng nhập tên danh mục')),
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(l10n?.enterCategoryName ?? 'Vui lòng nhập tên danh mục'),
+                        backgroundColor: Colors.orangeAccent,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     );
                     return;
                   }
@@ -206,8 +219,13 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                   ).toList();
 
                   if (existingCategory.isNotEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tên danh mục này đã tồn tại. Vui lòng chọn tên khác')),
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(l10n?.categoryExists ?? 'Tên danh mục này đã tồn tại'),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     );
                     return;
                   }
@@ -219,6 +237,20 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                       iconName: _selectedIcon,
                       colorValue: _selectedColor,
                     );
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.check_circle_outline, color: Colors.white),
+                            const SizedBox(width: 12),
+                            Text(l10n?.categoryAdded(name) ?? 'Đã thêm danh mục "$name"'),
+                          ],
+                        ),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    );
                   } else {
                     final updated = CategoryModel(
                       id: widget.category!.id,
@@ -229,15 +261,29 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                       userId: widget.category!.userId,
                     );
                     await financeProvider.updateCustomCategory(updated);
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.edit_note, color: Colors.white),
+                            const SizedBox(width: 12),
+                            Text(l10n?.categoryUpdated(name) ?? 'Đã cập nhật danh mục "$name"'),
+                          ],
+                        ),
+                        backgroundColor: Colors.blueAccent,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    );
                   }
                   
-                  if (mounted) Navigator.pop(context);
+                  navigator.pop();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.lightBlueAccent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                 ),
-                child: const Text('Lưu', style: TextStyle(color: Colors.white, fontSize: 18)),
+                child: Text(l10n?.save ?? 'Lưu', style: const TextStyle(color: Colors.white, fontSize: 18)),
               ),
             ),
           ),
